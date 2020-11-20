@@ -1,7 +1,7 @@
 # Temperature-DEBIPM
 R code for generating the size- and temperature depenendent DEB-IPM for co-authors. 
 
-##Info on current repository content
+## Info on current repository content
 
 * To run and plot the model, download the content of the repository (green button that says Code, right and up). Unzip and store the two R-scripts (Thunell_DEBIPM_model_20201120 and Thunell_DEBIPM_plot_20201120) in your working directory. When scripts are open in R, first change the path in the beginning of each script to your working directory.
 
