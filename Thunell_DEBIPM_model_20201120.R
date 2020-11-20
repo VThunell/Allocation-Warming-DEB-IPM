@@ -155,13 +155,13 @@ DEBrepfun <- function(x, Pars, o_E) { # Note that intake here is intake_rate*Y*a
          (sum(R)/o_E)*0.5) # Summed energy allocated to reproduction in one season diveded by egg weight and 0.5 from sex ratio (half of the eggs are female)
 }
 
-### OFFSPRING LENGTH DISTRIBUTION ####
+### OFFSPRING SIZE DISTRIBUTION ####
 # Probability of an egg to hatch and grow into size y in t+1?
 # From Vindenes 2014: "Density distribution for offspring size y (we assume parental length x does not affect offspring length)."
 # Temp dependent mean weight of offspring is calculated from YV 2014 linear relationship
 # Variance from Windermere: sd(ltow_J((GData[GData$Age==1,]$Length))) (3.72 for length in Vindenes 2014)
 
-DEBoff.length <- function(y, Pars, offvar = 24.05458^2){ #lognormal distribution of offspring lengths
+DEBoff.size <- function(y, Pars, offvar = 24.05458^2){ #lognormal distribution of offspring lengths
   mu <- ratefun(o_e, Pars)[134,2] #mean offspring length is mass after 134 days of growth (i.e. 184-50 days)
   yd <- dlnorm(y, meanlog=log(mu) - .5*log(1 + offvar/(mu^2)), sdlog=sqrt(log(1 + offvar/(mu^2))))
       yd/sum(yd*dx) # scaled distributon to 1, dx is step size in the k-matrix
@@ -200,7 +200,7 @@ DEBsurvfun <- function(m, Pars){ # Mass-Temp dependence of yearly Mortality
 # K.matrix <- function(Pars) { 
 #   Smat <- Fmat <- matrix(0,n+1,n+1) # Smat is growth times survival, Fmat is fecundity times offsring size dist
 #     sx <- c(egg_surv, DEBsurvfun(x))
-#   Smat[2:(n+1),1] <- egg_surv*DEBoff.length(y=x, Pars) * dx # First column of the S-matrix (from weight x[1]) is age 1, prob of egg survival times prob of growing into off.length (age 1).  
+#   Smat[2:(n+1),1] <- egg_surv*DEBoff.length(y=x, Pars) * dx # First column of the S-matrix (from weight x[1]) is age 1, prob of egg survival times prob of growing into off.size (age 1).  
 #   for (i in 2:(n+1)) { 
 #     Smat[2:(n+1),i] <- sx[i-1]*DEBgrowthfun(x[i-1], y=x, Pars) * dx
 #     Fmat[1,i] <- sx[i-1]*DEBrepfun(x[i-1], Pars, o_e) #Production of eggs from each size class, (the number of eggs that x in t (size in april) will release in april in t+1) * (probability to grow from egg to age 1 (in t+2-1)
@@ -214,7 +214,7 @@ DEBsurvfun <- function(m, Pars){ # Mass-Temp dependence of yearly Mortality
 K.matrix <- function(Pars) { 
   Smat <- Fmat <- matrix(0,n+1,n+1) 
   sx <- c(egg_surv, DEBsurvfun(x, Pars))
-  Smat[2:(n+1),1] <- sx[1]*DEBoff.length(y=x, Pars) * dx # First column (and 2:101 row) of the S-matrix (from weight x[1]) is age 1, prob of egg survival times prob of growing into off.length (age 1).  
+  Smat[2:(n+1),1] <- sx[1]*DEBoff.size(y=x, Pars) * dx # First column (and 2:101 row) of the S-matrix (from weight x[1]) is age 1, prob of egg survival times prob of growing into off.length (age 1).  
   for (i in 2:(n+1)) {
     Smat[2:(n+1),i] <- sx[i]*DEBgrowthfun(x[i-1], y=x, Pars) * dx
     Fmat[1,i] <- sx[i]*DEBrepfun(x[i-1], Pars, o_e) #Production of eggs from each size class, (the number of eggs that x in t (size in april) will release in april in t+1) * (probability to grow from egg to age 1 (in t+2-1)
@@ -244,8 +244,8 @@ wvlambda <- function(Kmat, tol=1e-20){
 
 ###CALCULATE LAMBDA, STABLE STRUCTURE AND REPRODUCTIVE VALUES FOR VARYING KAPPA AND TEMP VALUES ####
 
-Kappa <- seq(0.4,0.9,0.02)    # Kappa values to explore
-T <- 282:288  # temperature range
+Kappa <- seq(0.4,1,0.05)    # Kappa values to explore
+T <- 283:286  # temperature range
 Res_lamA = NULL
 Res_vA = NULL
 Res_wA = NULL

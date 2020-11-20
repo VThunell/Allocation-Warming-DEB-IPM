@@ -133,11 +133,11 @@ outR %>%
  points(GData2$Age, ltow_A(GData2$Length))
  legend("bottomright", c("DEB", "Windermere Pike"), col=c("red","black"),lty=c(1, NA), pch =c(NA,1,NA), cex = 0.75)
 
-# Plot individual growth trajectories of windermere pike
+# Plot individual growth trajectories or size at age of Windermere pike
 outR %>%
  filter(Temp == 283) %>%
  ggplot(., aes(age, mass)) +
- geom_line(data=GData, aes(Age, ltow_A(Length), group = as.factor(Ind))) +
+ #geom_line(data=GData, aes(Age, ltow_A(Length), group = as.factor(Ind))) +
  geom_line(size=1, color = "red") +
  theme_bw() +  
  scale_colour_brewer(palette="Dark2")
@@ -149,11 +149,13 @@ outR %>%
   lines(re~mass, data=., lwd = 2, type = "l", col = "red")
   legend("topleft", c("DEB", "Windermere Pike"), lty=c(1, NA), pch =c(NA,1), col= c("red","black"),cex=.7)
 
-# Plot DEBoff.length ####
-plot(x,DEBoff.length(x, GR_pars), type = "l", xlab = "y", ylab = "f(x)",
-     main= "Offspring length distribution") # Temp effect on mean size not plotted
+# Plot DEBoff.size ####
+# Temp effect on mean size not plotted yet
+  plot(x,DEBoff.size(x, GR_pars), type = "l", xlab = "y", ylab = "f(x)",
+     main= "Offspring size distribution") 
 
 # Plot DEBsurv ####
+# Temp effect on surv not plotted yet
 plot(x, DEBsurvfun(x, GR_pars), type="l", col="red",ylim=c(0,1))
 
 #VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV
@@ -161,27 +163,30 @@ plot(x, DEBsurvfun(x, GR_pars), type="l", col="red",ylim=c(0,1))
 #VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV
 
 ### PLOT LAMBDA AS A FUNCTION OF KAPPA AND/OR TEMP ####
+#pdf("\\\\storage-og.slu.se/home$/vitl0001/Desktop/kappaTlamdba_20201120.pdf", width = 8, height = 3.5)
 ggplot(as.data.frame(Res_lam), aes(Kappa, lam, color = as.factor(T))) +
   geom_line(size=0.5) +
   ylab(expression(lambda~(Fitness))) +
   xlab(expression(Kappa~(Growth~Allocation))) +
   labs(color = "Temp [K]") +
   theme_bw()
+
   
 ### PLOT STABLE STRUCTURE W AS A FUNCTION OF KAPPA AND/OR TEMP ####
 colnames(Res_w)[10:ncol(Res_w)] <- c(0,x)
-Res_w_long<- gather(Res_w, key = "Size", value ="biom", c(11:ncol(Res_w))) # not use column 10 & 11 (eggstage and recruits)
+Res_w_long <- gather(Res_w, key = "Size", value ="biom", c(11:ncol(Res_w))) # not use column 10 & 11 (eggstage and recruits)
 str(Res_w_long)
 Res_w_long %>%
-  filter(near(Kappa,0.8)) %>% #Floating point issue when comparing vector, therfore the use of near()
-  filter(T == 283)  %>% 
+  filter(near(Kappa, 0.8)) %>% #Floating point issue when comparing vector, therefore the use of near()
+  filter(T == 283) %>% 
   ggplot(., aes(as.numeric(Size), biom), color = as.factor(T)) +
-  geom_line(size=0.5) +
-  ylab("?") +
-  xlab("Size") +
-  #    ylim(0,0.5e-7) + #instead of default 3e-07 
-  #xlim(200,15000) + #instead of default 
-  labs(color = "Temp [K]")
+    ggtitle("Only for T=283 & Kappa=0.8 at the moment") + # for the main title
+    geom_line(size=0.5) +
+    ylab("w") +
+    xlab("Size") +
+    xlim(0,14000) +
+    theme_bw()+
+    labs(color = "Temp [K]")
 
 # YVs plot method from res for comparison
 #plot(x,res$w[2:(n+1)],type="l")# ,ylim=c(0,.0001)) # the stable structure "w"
@@ -191,14 +196,16 @@ colnames(Res_v)[10:ncol(Res_v)] <- c(0,x)
 Res_v_long <- gather(Res_v, key = "Size", value ="biom", c(11:ncol(Res_v))) # not use column 9 & 10 (eggstage and recruits)
 str(Res_v_long)
 Res_v_long %>%
-  filter(Kappa == 0.8) %>% #cant choose Kappa = 0.85
-  filter(T == 283)  %>% #cant choose Kappa = 0.85
-  ggplot(., aes(as.numeric(Size), biom, color = as.factor(T))) +
-  geom_line(size=0.5) +
-  ylab("Reproductive value V") +
-  xlab("Size")+
-  xlim(0,14000) +
-  labs(color = "Temp [K]")
+  filter(Kappa == 0.8) %>% 
+  filter(T == c(283,284,285))  %>% 
+  ggplot(., aes(as.numeric(Size), biom, color = as.factor(T), linetype = as.factor(Kappa))) +
+    geom_line(size=0.5) +
+    ylab("Reproductive value V") +
+    xlab("Size")+
+    xlim(0,14000) +
+    theme_bw() +
+    labs(color = "Temp [K]")
+#dev.off()
 
 # YVs plot method from res for comparison
 #plot(x,res$v[2:(n+1)],type="l" ) # reproductive values "v"
