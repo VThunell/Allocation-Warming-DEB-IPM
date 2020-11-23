@@ -1,8 +1,8 @@
 
 ### PLOT DEB IPM 2020 11 18 ####
 
-setwd("~/Manus2/R/Manus2R")
-source("Thunell_DEBIPM_model_20201116.R")
+setwd("C:/Users/vitl0001/VThunell_repos/Temperature-DEBIPM")
+source("Thunell_DEBIPM_model_20201120.R")
 
 ## PLOT MASS AND TEMPERATURE FUNCTIONS ####
 
@@ -107,7 +107,7 @@ ggplot(outR) +
 
 #### PLOT RATE FUNCTION FOR IPM ####
 
-#Plot parameters for IPM vital rate functions
+#Plot-parameters for IPM vital rate functions
 GR_pars <- c(T =283,     # parameters for Temperature, feeding, allocation and Mass dependence
              Kappa = Kap, # allocation to respiration (Growth and maintenance)
              Y=Y,         # Feeding level
@@ -137,7 +137,7 @@ outR %>%
 outR %>%
  filter(Temp == 283) %>%
  ggplot(., aes(age, mass)) +
- #geom_line(data=GData, aes(Age, ltow_A(Length), group = as.factor(Ind))) +
+ geom_line(data=GData, aes(Age, ltow_A(Length), group = as.factor(Ind))) +
  geom_line(size=1, color = "red") +
  theme_bw() +  
  scale_colour_brewer(palette="Dark2")
@@ -178,15 +178,27 @@ Res_w_long <- gather(Res_w, key = "Size", value ="biom", c(11:ncol(Res_w))) # no
 str(Res_w_long)
 Res_w_long %>%
   filter(near(Kappa, 0.8)) %>% #Floating point issue when comparing vector, therefore the use of near()
+  #filter(T == 283) %>% 
+  ggplot(., aes(as.numeric(Size), biom, color = as.factor(T))) +
+  ggtitle("Stable structure over Size with temperatures") + 
+  geom_line(size=0.5) +
+  ylab("Stable structure w") +
+  xlab("Size") +
+  xlim(0,14000) +
+  theme_bw()+
+  labs(color = "Temp [K]")
+
+Res_w_long %>%
+  filter(near(Kappa, c(0.7,0.8,0.9))) %>% #Floating point issue when comparing vector, therefore the use of near()
   filter(T == 283) %>% 
-  ggplot(., aes(as.numeric(Size), biom), color = as.factor(T)) +
-    ggtitle("Only for T=283 & Kappa=0.8 at the moment") + # for the main title
-    geom_line(size=0.5) +
-    ylab("w") +
-    xlab("Size") +
-    xlim(0,14000) +
-    theme_bw()+
-    labs(color = "Temp [K]")
+  ggplot(., aes(as.numeric(Size), biom, color = as.factor(Kappa))) +
+  ggtitle("Stable structure over Size with three Kappas") + 
+  geom_line(size=0.5) +
+  ylab("Stable structure w") +
+  xlab("Size") +
+  xlim(0,14000) +
+  theme_bw()+
+  labs(color = expression(kappa))
 
 # YVs plot method from res for comparison
 #plot(x,res$w[2:(n+1)],type="l")# ,ylim=c(0,.0001)) # the stable structure "w"
@@ -196,15 +208,27 @@ colnames(Res_v)[10:ncol(Res_v)] <- c(0,x)
 Res_v_long <- gather(Res_v, key = "Size", value ="biom", c(11:ncol(Res_v))) # not use column 9 & 10 (eggstage and recruits)
 str(Res_v_long)
 Res_v_long %>%
-  filter(Kappa == 0.8) %>% 
-  filter(T == c(283,284,285))  %>% 
+  filter(near(Kappa, 0.8)) %>% #Floating point issue when comparing vector, therefore the use of near()
   ggplot(., aes(as.numeric(Size), biom, color = as.factor(T), linetype = as.factor(Kappa))) +
-    geom_line(size=0.5) +
-    ylab("Reproductive value V") +
-    xlab("Size")+
-    xlim(0,14000) +
-    theme_bw() +
-    labs(color = "Temp [K]")
+  ggtitle("Repro. values over Size with temperatures") + 
+  geom_line(size=0.5) +
+  ylab("Reproductive value V") +
+  xlab("Size")+
+  xlim(0,14000) +
+  theme_bw() +
+  labs(color = "Temp [K]")
+
+Res_v_long %>%
+  filter(near(Kappa, c(0.7,0.8,0.9))) %>%
+  filter(T == c(283))  %>% 
+  ggplot(., aes(as.numeric(Size), biom, color = as.factor(Kappa))) +
+  ggtitle("Repro. values over Size with three Kappas") + 
+  geom_line(size=0.5) +
+  ylab("Reproductive value V") +
+  xlab("Size")+
+  xlim(0,14000) +
+  theme_bw() +
+  labs(color = expression(kappa))
 #dev.off()
 
 # YVs plot method from res for comparison
