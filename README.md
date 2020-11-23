@@ -18,3 +18,5 @@ R code for generating the size- and temperature depenendent DEB-IPM for co-autho
 * You might consider the plot of fecundity of the DEB and Windermere pike. Given the kappa-scaling that we use, this underestimates reproductive output of large but not small individuals. The only way that I can think of to fix this is to include an allometric relationship of Kappa as we need to increase allocable energy for reproduction but not growth for large individuals.
 
 * I have used the survival of eggs to scale the long-term population growth rate to reasonable values (to slightly above one).
+
+* ...
