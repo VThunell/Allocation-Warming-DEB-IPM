@@ -2,7 +2,7 @@
 ### PLOT DEB IPM 2020 11 18 ####
 
 setwd("C:/Users/vitl0001/VThunell_repos/Temperature-DEBIPM")
-source("Thunell_DEBIPM_model_20201120.R")
+source("Thunell_DEBIPM_model_20201203.R")
 
 ## PLOT MASS AND TEMPERATURE FUNCTIONS ####
 
@@ -12,7 +12,7 @@ plot(x,Kap*alpha*Y*eps1*x^eps2, #Imax,
      type = "l", lty=2, xlab="Mass [g]", ylab=expression('gram day' ^-1), main= "Mass-scaling of rates and Growth energy at Tref", ylim = c(0,100))
 lines(x,rho1*x^rho2, col="red") #Maintenance
 lines(x,eps1*x^eps2, col= "blue") #Imax, 
-legend("topleft", c("Growth energy (Intake*IM_r*Kap*alpha*Y)", "Maintenance rate","Max intake rate"), lty=c(2,1,1), col = c("black" ,"red", "blue"),  cex=0.7)
+legend("topleft", c("Growth energy (Intake*Kap*alpha*Y)", "Maintenance rate","Max intake rate"), lty=c(2,1,1), col = c("black" ,"red", "blue"),  cex=0.7)
 
 ### Plot Temp functions 
 plot(280:290, rI_T_GU2(280:290, 10, T_par), ylim=c(0,2), type = "l", xlab="Temperature [K]", ylab="Temp. effect", main= "Temperature effect on rates, Tref = 283 K")
@@ -24,7 +24,7 @@ Temp <- 280:290
 T_rates = NULL
 for(i in Temp) {
   maint <- rho1*(x^rho2)*rM_T_AL2(i, x, T_par)
-  intake  <- IM_r*eps1*(x^eps2)*rI_T_GU2(i, x, T_par) 
+  intake  <- eps1*(x^eps2)*rI_T_GU2(i, x, T_par) 
   T_rates  <- rbind(T_rates,
                    cbind(Temp = i, mass = x, 
                          maint, intake, 
@@ -68,7 +68,6 @@ for (j in Kap) {
                   Kappa = j, # allocation to respiration (Growth and maintenance)
                   Y=Y,         # Feeding level
                   alpha=alpha,     # assimilation efficiency
-                  IM_r=IM_r,      # ratio Intake maintenance
                   eps1=eps1,      # Intake allometric scalar, 0.248 based on roach by Lindmark assuming that intake scales equally with mass between species in his system
                   eps2=eps2,      # Intake allometric exponent, 0.64 from Lindmark unpub. 0.725 to get an length asymtopte Lm for pike at 292 K. 0.767 based on roach by Lindmark assuming that intake scales equally with mass between species in his system
                   rho1=rho1,      # Maintenance allometric scalar, Guesstimate 0.0204. 0.02 based on pike estimated by Lindmark
@@ -76,12 +75,12 @@ for (j in Kap) {
     
   for(seas in 1:20) { # growth from age 1 happens in this for-loop, 25 years is from age 2 to 26
       if(seas == 1){
-        offmean <- ratefun(o_e, plotpars)[134,2]
-        p <- data.frame(mass = ratefun(offmean, plotpars)[sl+1,2],
+        offmean <- ratefun(o_e, plotpars)[sl/2,2]
+        p <- data.frame(mass = max(ratefun(offmean, plotpars)[,2]),
                         re = DEBrepfun(offmean, plotpars, o_e), 
                         age = seas+1) #age 2 as offmean represents age 1
       } else p <- rbind(p,
-                      c(ratefun(p[nrow(p),1], plotpars)[sl+1,2],
+                      c(max(ratefun(p[nrow(p),1], plotpars)[,2]),
                         DEBrepfun(p[nrow(p),1], plotpars, o_e), 
                         seas+1))
     }
@@ -93,7 +92,6 @@ for (j in Kap) {
     outR <- rbind(outR,y)
       }
 }
-
 
 # Plot mass over Age for the different Temps
 ggplot(outR) +
@@ -112,7 +110,6 @@ GR_pars <- c(T =283,     # parameters for Temperature, feeding, allocation and M
              Kappa = Kap, # allocation to respiration (Growth and maintenance)
              Y=Y,         # Feeding level
              alpha=alpha,     # assimilation efficiency
-             IM_r=IM_r,      # ratio Intake maintenance
              eps1=eps1,      # Intake allometric scalar, 0.248 based on roach by Lindmark assuming that intake scales equally with mass between species in his system
              eps2=eps2,      # Intake allometric exponent, 0.64 from Lindmark unpub. 0.725 to get an length asymtopte Lm for pike at 292 K. 0.767 based on roach by Lindmark assuming that intake scales equally with mass between species in his system
              rho1=rho1,      # Maintenance allometric scalar, Guesstimate 0.0204. 0.02 based on pike estimated by Lindmark
@@ -150,13 +147,53 @@ outR %>%
   legend("topleft", c("DEB", "Windermere Pike"), lty=c(1, NA), pch =c(NA,1), col= c("red","black"),cex=.7)
 
 # Plot DEBoff.size ####
-# Temp effect on mean size not plotted yet
-  plot(x,DEBoff.size(x, GR_pars), type = "l", xlab = "y", ylab = "f(x)",
-     main= "Offspring size distribution") 
-
+Toff <- NULL
+xToff <- 1:200
+for(i in seq(282,290,2)){
+  Toff_pars <- c(T = i,     # parameters for Temperature, feeding, allocation and Mass dependence
+               Kappa = Kap, # allocation to respiration (Growth and maintenance)
+               Y=Y,         # Feeding level
+               alpha=alpha,     # assimilation efficiency
+               eps1=eps1,      # Intake allometric scalar, 0.248 based on roach by Lindmark assuming that intake scales equally with mass between species in his system
+               eps2=eps2,      # Intake allometric exponent, 0.64 from Lindmark unpub. 0.725 to get an length asymtopte Lm for pike at 292 K. 0.767 based on roach by Lindmark assuming that intake scales equally with mass between species in his system
+               rho1=rho1,      # Maintenance allometric scalar, Guesstimate 0.0204. 0.02 based on pike estimated by Lindmark
+               rho2=rho2)
+  Toff <- as.data.frame(rbind(Toff, c(Toff_pars,DEBoff.size(xToff, Toff_pars))))
+}
+colnames(Toff)[9:ncol(Toff)] <- c(xToff)
+Toff_long <- gather(Toff, key = "Size", value ="biom", c(10:ncol(Toff))) # not use column 10 & 11 (eggstage and recruits)
+Toff_long %>%
+#filter(near(Kappa, 0.8)) %>%
+ggplot(., aes(as.numeric(Size), biom, color = as.factor(T))) +
+  geom_line(size=0.5) +
+  ylab("Offspring size dist.") +
+  xlab("Size") +
+  xlim(0,200) +
+  theme_bw()
+  
 # Plot DEBsurv ####
-# Temp effect on surv not plotted yet
-plot(x, DEBsurvfun(x, GR_pars), type="l", col="red",ylim=c(0,1))
+Tsur <- NULL
+for(i in seq(282,290,2)){
+  Tsur_pars <- c(T = i,     # parameters for Temperature, feeding, allocation and Mass dependence
+                 Kappa = Kap, # allocation to respiration (Growth and maintenance)
+                 Y=Y,         # Feeding level
+                 alpha=alpha,     # assimilation efficiency
+                 eps1=eps1,      # Intake allometric scalar, 0.248 based on roach by Lindmark assuming that intake scales equally with mass between species in his system
+                 eps2=eps2,      # Intake allometric exponent, 0.64 from Lindmark unpub. 0.725 to get an length asymtopte Lm for pike at 292 K. 0.767 based on roach by Lindmark assuming that intake scales equally with mass between species in his system
+                 rho1=rho1,      # Maintenance allometric scalar, Guesstimate 0.0204. 0.02 based on pike estimated by Lindmark
+                 rho2=rho2)
+  Tsur <- as.data.frame(rbind(Tsur, c(Tsur_pars,DEBsurvfun(x, Tsur_pars))))
+}
+colnames(Tsur)[9:ncol(Tsur)] <- c(x)
+Tsur_long <- gather(Tsur, key = "Size", value ="biom", c(9:ncol(Tsur))) # not use column 10 & 11 (eggstage and recruits)
+Tsur_long %>%
+  filter(near(Kappa, 0.8)) %>%
+  ggplot(., aes(as.numeric(Size), biom, color = as.factor(T))) +
+  geom_line(size=0.5) +
+  ylab("Survival") +
+  xlab("Size") +
+  xlim(0,14000) +
+  theme_bw()
 
 #VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV
 #### ### ## # PLOT RESULTS #### ### ## # ## ### ####
@@ -173,12 +210,11 @@ ggplot(as.data.frame(Res_lam), aes(Kappa, lam, color = as.factor(T))) +
 
   
 ### PLOT STABLE STRUCTURE W AS A FUNCTION OF KAPPA AND/OR TEMP ####
-colnames(Res_w)[10:ncol(Res_w)] <- c(0,x)
-Res_w_long <- gather(Res_w, key = "Size", value ="biom", c(11:ncol(Res_w))) # not use column 10 & 11 (eggstage and recruits)
+colnames(Res_w)[9:ncol(Res_w)] <- c(0,x)
+Res_w_long <- gather(Res_w, key = "Size", value ="biom", c(10:ncol(Res_w))) # not use column 10 & 11 (eggstage and recruits)
 str(Res_w_long)
 Res_w_long %>%
-  filter(near(Kappa, 0.8)) %>% #Floating point issue when comparing vector, therefore the use of near()
-  #filter(T == 283) %>% 
+  filter(Kappa %in% 0.8) %>% #Floating point issue when comparing vector, therefore the use of %in%, can also use near()
   ggplot(., aes(as.numeric(Size), biom, color = as.factor(T))) +
   ggtitle("Stable structure over Size with temperatures") + 
   geom_line(size=0.5) +
@@ -189,7 +225,7 @@ Res_w_long %>%
   labs(color = "Temp [K]")
 
 Res_w_long %>%
-  filter(near(Kappa, c(0.7,0.8,0.9))) %>% #Floating point issue when comparing vector, therefore the use of near()
+  filter(Kappa %in% c(0.7,0.8,0.9)) %>% #Floating point issue when comparing vector, therefore the use of near()
   filter(T == 283) %>% 
   ggplot(., aes(as.numeric(Size), biom, color = as.factor(Kappa))) +
   ggtitle("Stable structure over Size with three Kappas") + 
@@ -204,11 +240,11 @@ Res_w_long %>%
 #plot(x,res$w[2:(n+1)],type="l")# ,ylim=c(0,.0001)) # the stable structure "w"
 
 ### PLOT REPRODUCTIVE VALUES V AS A FUNCTION OF KAPPA AND/OR TEMP ####
-colnames(Res_v)[10:ncol(Res_v)] <- c(0,x)
-Res_v_long <- gather(Res_v, key = "Size", value ="biom", c(11:ncol(Res_v))) # not use column 9 & 10 (eggstage and recruits)
+colnames(Res_v)[9:ncol(Res_v)] <- c(0,x)
+Res_v_long <- gather(Res_v, key = "Size", value ="biom", c(10:ncol(Res_v))) # not use column 9 & 10 (eggstage and recruits)
 str(Res_v_long)
 Res_v_long %>%
-  filter(near(Kappa, 0.8)) %>% #Floating point issue when comparing vector, therefore the use of near()
+  filter(Kappa %in% 0.8) %>% #Floating point issue when comparing vector, therefore the use of %in%, can also use near()
   ggplot(., aes(as.numeric(Size), biom, color = as.factor(T), linetype = as.factor(Kappa))) +
   ggtitle("Repro. values over Size with temperatures") + 
   geom_line(size=0.5) +
@@ -219,7 +255,7 @@ Res_v_long %>%
   labs(color = "Temp [K]")
 
 Res_v_long %>%
-  filter(near(Kappa, c(0.7,0.8,0.9))) %>%
+  filter(Kappa %in% c(0.7,0.8,0.9)) %>%
   filter(T == c(283))  %>% 
   ggplot(., aes(as.numeric(Size), biom, color = as.factor(Kappa))) +
   ggtitle("Repro. values over Size with three Kappas") + 
