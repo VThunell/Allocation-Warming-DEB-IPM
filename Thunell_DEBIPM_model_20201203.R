@@ -220,7 +220,7 @@ wvlambda <- function(Kmat, tol=1e-20){
 
 ###CALCULATE LAMBDA, STABLE STRUCTURE AND REPRODUCTIVE VALUES FOR VARYING KAPPA AND TEMP VALUES ####
 
-Kappa <- seq(0,1,0.5)    # Kappa values to explore
+Kappa <- seq(0,1,0.1)    # Kappa values to explore
 T <- seq(283,286,1)  # temperature range
 Res_lamA <- NULL#matrix(ncol = 9, nrow = length(Kappa)*length(T)) # assuming 40 here from files
 Res_vA  <- NULL#matrix(ncol = 8+1+length(x), nrow = length(Kappa)*length(T)) # assuming 40 here from files

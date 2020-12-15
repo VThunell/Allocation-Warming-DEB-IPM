@@ -253,7 +253,7 @@ Res_w_long %>%
   labs(color = "Temp [K]")
 
 Res_w_long %>%
-  filter(Kappa %in% c(0.7,0.8,0.9)) %>% #Floating point issue when comparing vector, therefore the use of near()
+  filter(near(Kappa, c(0.7,0.8,0.9))) %>% #Floating point issue when comparing vector, therefore the use of near()
   filter(T == 283) %>% 
   ggplot(., aes(as.numeric(Size), biom, color = as.factor(Kappa))) +
   ggtitle("Stable structure over Size with three Kappas") + 
@@ -280,7 +280,7 @@ Res_v_long %>%
   labs(color = "Temp [K]")
 
 Res_v_long %>%
-  filter(Kappa %in% c(0.7,0.8,0.9)) %>%
+  filter(near(Kappa, c(0.7,0.8,0.9))) %>%
   filter(T == c(283))  %>% 
   ggplot(., aes(as.numeric(Size), biom, color = as.factor(Kappa))) +
   ggtitle("Repro. values over Size with three Kappas") + 
