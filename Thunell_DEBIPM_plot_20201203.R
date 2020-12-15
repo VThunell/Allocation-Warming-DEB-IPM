@@ -4,6 +4,8 @@
 setwd("C:/Users/vitl0001/VThunell_repos/Temperature-DEBIPM")
 source("Thunell_DEBIPM_model_20201203.R")
 
+library(scales)
+
 ## PLOT MASS AND TEMPERATURE FUNCTIONS ####
 
 ### Plot mass functions 
@@ -201,15 +203,41 @@ Tsur_long %>%
 
 ### PLOT LAMBDA AS A FUNCTION OF KAPPA AND/OR TEMP ####
 #pdf("\\\\storage-og.slu.se/home$/vitl0001/Desktop/kappaTlamdba_20201120.pdf", width = 8, height = 3.5)
-ggplot(as.data.frame(Res_lam), aes(Kappa, lam, color = as.factor(T))) +
+ggplot(Res_lam, aes(Kappa, lam, color = as.factor(T))) +
   geom_line(size=0.5) +
   ylab(expression(lambda~(Fitness))) +
   xlab(expression(Kappa~(Growth~Allocation))) +
   labs(color = "Temp [K]") +
   theme_bw()
 
-  
-### PLOT STABLE STRUCTURE W AS A FUNCTION OF KAPPA AND/OR TEMP ####
+### PLOT KAPPA at max(LAMBDA) (y) AS A FUNCTION TEMP (x) ####
+Res_lam %>% 
+  mutate(lam.1 = ifelse(lam < 1, "extin", "grow")) %>% 
+  group_by(T) %>%
+  slice_max(lam) %>%
+  ggplot(., aes(T, Kappa, color = lam.1)) +
+  ggtitle("Kappa value that gives highest lambda over Temp") + 
+  geom_line(size=0.5) +
+  geom_vline(xintercept = 283, colour="blue") +
+  geom_text(aes(x=283.5, label="T0", y=0.78), colour="blue") +
+  ylab(expression(Kappa~at~max~lambda)) +
+  scale_color_manual(values=c("black","red")) +
+  xlab("Temperature") +
+  labs(color = "") +
+  theme_bw()
+
+### PLOT A SURFACE OF FITNESS OVER TEMP (x) AND KAPPA (y)
+ggplot(Res_lam, aes(T,Kappa)) +
+  geom_raster(aes(fill=round(lam, 4))) + #, interpolate = TRUE) +
+  scale_fill_gradientn(
+    colours = c("black","white","yellow","red"),
+    values = rescale(c(0,0.9999,1, round(max(Res_lam$lam), 4)), to=c(0,1)),
+    breaks = c(0,1, round(max(Res_lam$lam), 2)),
+    labels=c("0",1,"Max lambda")) +
+  theme_bw()
+
+
+## PLOT STABLE STRUCTURE W AS A FUNCTION OF KAPPA AND/OR TEMP ####
 colnames(Res_w)[9:ncol(Res_w)] <- c(0,x)
 Res_w_long <- gather(Res_w, key = "Size", value ="biom", c(10:ncol(Res_w))) # not use column 10 & 11 (eggstage and recruits)
 str(Res_w_long)
@@ -235,9 +263,6 @@ Res_w_long %>%
   xlim(0,14000) +
   theme_bw()+
   labs(color = expression(kappa))
-
-# YVs plot method from res for comparison
-#plot(x,res$w[2:(n+1)],type="l")# ,ylim=c(0,.0001)) # the stable structure "w"
 
 ### PLOT REPRODUCTIVE VALUES V AS A FUNCTION OF KAPPA AND/OR TEMP ####
 colnames(Res_v)[9:ncol(Res_v)] <- c(0,x)
@@ -267,27 +292,3 @@ Res_v_long %>%
   labs(color = expression(kappa))
 #dev.off()
 
-# YVs plot method from res for comparison
-#plot(x,res$v[2:(n+1)],type="l" ) # reproductive values "v"
-
-# ### PLOT the K matrix #### NOT WORKING
-
-# L <- as.data.frame(K)
-# rownames(L)= c(x,x[ncol(L)-1]+1)
-# colnames(L)= c(0.1,x)
-
-# library(reshape2)
-# library(ggplot2)
-# longData<-melt(K)
-# ggplot(longData, aes(x = Var2, y = Var1)) + 
-#   geom_raster(aes(fill=value)) + 
-#   scale_fill_gradient(low="yellow", high="red") +
-#   labs(x="x", y="y", title="Kernel") +
-#   theme_bw() + theme(axis.text.x=element_text(size=9, angle=0, vjust=0.3),
-#                      axis.text.y=element_text(size=9),
-#                      plot.title=element_text(size=11))
-# 
-# Using countor
-# contour(t(Mknsd[(n+1):1,1:(n+1)]),lty=1,lwd=.2,xaxt="n+1",xaxs="i",yaxs="i",yaxt="n",xlab="From Weight",ylab="To Weight",levels=seq(0,.1,.01))
-# # contour(t(K[(n+1):1,1:(n+1)]),lty=1,lwd=.2,add=T,levels=seq(0,.5,.001), xaxt="n",xaxs="i",yaxs="i",yaxt="n",xlab="From Weight",ylab="To Weight",main="Mean projection kernel")
-# # contour(t(K[(n+1):1,1:(n+1)]),lty=1,lwd=.2,xaxt="n",xaxs="i",yaxs="i",yaxt="n",xlab="From Weight",ylab="To Weight")

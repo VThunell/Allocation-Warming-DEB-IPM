@@ -11,7 +11,7 @@
 setwd("C:/Users/vitl0001/VThunell_repos/Temperature-DEBIPM")
 
 ## Windermere Pike data
-#YVPike <- load("~/Manus2/R/Manus2R/PikeDataFiles.R")
+YVPike <- load("~/Manus2/R/Manus2R/PikeDataFiles.R")
 # str(YVPike)
 
 ### Packages ####
@@ -22,7 +22,6 @@ library(tidyverse) # gglot etc.
 #install.packages("grid")
 library(grid)      # for grid.text
 #install.packages("fields")
-library(fields)      # for image.plot
 
 #VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV
 ### DEB Dynamic energy budget model ####
@@ -104,7 +103,7 @@ ratefun <- function(x, Pars) { # mean function for y (dependent on mass) over on
 ### SIZES & PARAMETERS FOR IPM ####
 mmin = 1     # min weight
 mmax = 14000 # max weight
-n = 150      # row/col number of the discretization-matrix of the continuos rates
+n = 110      # row/col number of the discretization-matrix of the continuos rates
 x <- seq(mmin,mmax, length=n)
 dx <- x[2] - x[1] # step size (grams) in the continuos size spectra
 
@@ -221,11 +220,11 @@ wvlambda <- function(Kmat, tol=1e-20){
 
 ###CALCULATE LAMBDA, STABLE STRUCTURE AND REPRODUCTIVE VALUES FOR VARYING KAPPA AND TEMP VALUES ####
 
-Kappa <- seq(0.5,1,0.05)    # Kappa values to explore
-T <- 283:286  # temperature range
-Res_lamA = NULL
-Res_vA = NULL
-Res_wA = NULL
+Kappa <- seq(0,1,0.5)    # Kappa values to explore
+T <- seq(283,286,1)  # temperature range
+Res_lamA <- NULL#matrix(ncol = 9, nrow = length(Kappa)*length(T)) # assuming 40 here from files
+Res_vA  <- NULL#matrix(ncol = 8+1+length(x), nrow = length(Kappa)*length(T)) # assuming 40 here from files
+Res_wA  <- NULL#matrix(ncol = 8+1+length(x), nrow = length(Kappa)*length(T)) # assuming 40 here from files
 
 for (d in T) {
   for (e in Kappa) {
@@ -240,18 +239,27 @@ for (d in T) {
                rho2=rho2)
     
     K <- K.matrix(parsK)
-    res <- wvlambda(K)
+        res <- wvlambda(K)
+    
     Res_lamA <- rbind(Res_lamA, c(parsK, lam = res$lambda))
     Res_vA <- rbind(Res_vA, c(parsK, v = res$v)) #REPRODUCTIVE VALUES
     Res_wA <- rbind(Res_wA, c(parsK, w = res$w)) #STABLE STRUCTURE
-    
+
     }
 }
+
 Res_lam <- as.data.frame(Res_lamA)  # Make a df instead of matrix
 Res_v <- as.data.frame(Res_vA) # Make a df instead of matrix
 Res_w <- as.data.frame(Res_wA) # Make a df instead of matrix
+
+#write.table(Res_lam, file="Res_lam1207.txt",quote=TRUE, sep=",", row.names=TRUE)
 #colnames(Res_v) <- c("T","Y", "Kappa","alph", "eps1", "eps2", "rho1","rho2", as.character(round(x))) #minus recruits in x
 #colnames(Res_w) <- c("T","Y", "Kappa","alph", "eps1", "eps2", "rho1","rho2", as.character(round(x))) #minus recruits in x
-
 #rowSums(Res_w[,9:ncol(Res_w)])*dx
 
+## Sensitivity analyses based on Merow et al. 2014 appendix (section 1.4.5)
+
+#"The eigen-things can be combined to obtain the sensitivity and elasticity matrices."
+# v.dot.w=sum(stable.dist*repro.val)*h
+# sens=outer(repro.val,stable.dist)/v.dot.w
+# elas=matrix(as.vector(sens)*as.vector(K)/lam,nrow=n)
