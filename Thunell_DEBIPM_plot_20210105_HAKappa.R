@@ -1,7 +1,7 @@
 
 ### PLOT DEB IPM 2020 11 18 ####
 
-setwd("C:/Users/vitl0001/VThunell_repos/Temperature-DEBIPM")
+#setwd("C:/Users/vitl0001/VThunell_repos/Temperature-DEBIPM")
 #source("Thunell_DEBIPM_model_20210105_HAkappa.R")
 
 library(scales)
