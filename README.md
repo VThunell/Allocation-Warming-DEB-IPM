@@ -3,7 +3,7 @@ R code for generating the size- and temperature depenendent DEB-IPM for co-autho
 
 ## Info on current repository content
 
-Despite the Branch name Cost-of-reproduction, this branch contains the new code for including a Size dependent  kappa into the DEBIPM. For switching between size dependent and independent kappa, see function kap_fun(). When using the size indepedent kappa, the size scaling paramters of intake, should be reset (to eps1=0.64 and eps2=0.55)
+Despite the Branch name Cost-of-reproduction, this branch contains the new code for including a Size dependent kappa into the DEBIPM. For switching between size dependent and independent kappa, see function kap_fun(). When using the size indepedent kappa, the size scaling paramters of intake, should be reset (to eps1=0.64 and eps2=0.55).
 
 To run and plot the model, download the content of the repository (green button that says Code, right and up). 
 

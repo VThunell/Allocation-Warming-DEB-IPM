@@ -28,19 +28,31 @@ library(grid)      # for grid.text
 #### Mass dependence (allometric) functions of vital rates #####
 # a*(Mass^b), a = eps1 or rho1, b = eps2 or rho2
 
-# Allometric parameters (mass dependence at the reference temperature)
+## Allometric parameters (mass dependence at the reference temperature)
 rho1 <- 0.009  # Maintenance allometric scalar, rescaled from 0.02 based on pike estimated by Lindmark from Armstrong 1992.
 rho2 <- 0.87   # Maintenance allometric exponent, rescaled from 0.76 in Lindmark 2019 based on Diana 1982(?)
 eps1 <- 0.54 #614 #54 #64 # Intake allometric scalar, free parameter to fit grwth in Windermere pike.
 eps2 <- 0.58 #55 #58 # Intake allometric exponent, free parameter to fit grwth in Windermere pike.
-
-# General DEB-parameters
+## General DEB-parameters
 alpha <- 0.4   # assimilation efficiency
 #Y2 <- 1      # feeding level for mass < 1
 sl <- 183      # Season length in days, i.e. number of growth time steps + 1
 kap_fun <- function(m, kappa=0.8, ha=6){kappa*exp(-m/(ha*max(x)))} #for size dep. kappa
 #kap_fun <- function(m, kappa=0.8, ha=6){kappa*m/m} # for constant kappa
+## Temperature scaling parameters
+T0 <-  283            # Reference Temp
+k  <-  8.617332e-05   # Boltzmann constant
+cIa <- 0     # linear interaction between size and temp for Maximum intake.
+cM  <- 0.017 # linear interaction between size and temp for Maintenance. 0.017 Lindmark unpub.
+EaI <- 0.66  # activation energy Intake, Lindmark unpub. 0.66
+EaM <- 0.61  # activation energy Maintenance, Lindmark unpub: 0.61
+EaS <- 0.47  # activation energy Survival (mortality), Brown et al. 2004
+Td  <- T0+6  # deactivation temperature. 6 degrees in Lindmark unpub.?
+cId <- -0.02 # linear interaction effect (slope) between temp and mass for deactivation. -0.02 Guesstimate to fit assumptions on temperature dependent growth
+EdI <- 2     # deactivation energy. 2 is guesstimate 
 
+DEBparams <- as.data.frame(rbind(rho1,rho2,eps1,eps2,alpha,sl,T0,
+                                 k,cIa,cM,EaI,EaM,EaS,Td,cId,EdI))
 ### Temperature dependence functions of vital rates with interaction between Mass & Temp ####
 # Arrhenius-Lindmark function (AL, Boltzmann-Arrhenius with interaction between Mass & Temp)
 rM_T_AL2 <- function(T, m) { # AL Temp dependence of Maintenance 
@@ -52,17 +64,6 @@ rI_T_GU2 <- function(T, m) { # GU Temp dependence of intake
     (m^(-(cId*(T-Td)))) * (1+exp(EdI*(T-Td)/(k*T*Td)))^(-1) * 
     (m^(cId*(T0-Td))) * (1+exp(EdI*(T0-Td)/(k*T0*Td))) }
 
-# # Temperature scaling parameters
-T0 <-  283            # Reference Temp
-k  <-  8.617332e-05   # Boltzmann constant
-cIa <- 0     # linear interaction between size and temp for Maximum intake.
-cM  <- 0.017 # linear interaction between size and temp for Maintenance. 0.017 Lindmark unpub.
-EaI <- 0.66  # activation energy Intake, Lindmark unpub. 0.66
-EaM <- 0.61  # activation energy Maintenance, Lindmark unpub: 0.61
-EaS <- 0.47  # activation energy Survival (mortality), Brown et al. 2004
-Td  <- T0+6  # deactivation temperature. 6 degrees in Lindmark unpub.?
-cId <- -0.02 # linear interaction effect (slope) between temp and mass for deactivation. -0.02 Guesstimate to fit assumptions on temperature dependent growth
-EdI <- 2     # deactivation energy. 2 is guesstimate 
 
 ###  TEMP & MASS DEPENDENT RATE FUNCTION ####
 # ratefun() uses dwdt() through ode() and returns the mass and rate for intake and maintenance dependent on mass through
@@ -96,20 +97,23 @@ ratefun <- function(m, Pars) { # mean function for y (dependent on mass) over on
 ### SIZES & PARAMETERS FOR IPM ####
 mmin <- 1     # min weight
 mmax <- 16000 # max weight
-n <- 200     # row/col number of the discretization-matrix of the continuos rates
+n <- 100     # row/col number of the discretization-matrix of the continuos rates
 x <- seq(mmin,mmax, length=n)
 dx <- x[2] - x[1] # step size (grams) in the continuos size spectra
 
 e_m <- 0.00351388  # Egg mass calculated from windermere pike: mean(FData$Egg.weight))) 
 # e_mvar <- 0.0009163516^2 # variance of egg weight from windermer pike sd(FData$Egg.weight)
 # e_myd <- dlnorm(agg, meanlog = log(e_m) - .5*log(1 + e_mvar/e_m^2), sdlog = sqrt(log(1 + e_mvar/e_m^2))) #Distribution of y
-el_surv = 1e-5 # egg & larvae survival. losely based on Kipling and Frost 1970 1/50000 from laid egg to age 2. 1.9e-4 in Vindenes 2014
-
+el_surv = 1.9e-4#1e-5 # egg & larvae survival. losely based on Kipling and Frost 1970 1/50000 from laid egg to age 2. 1.9e-4 in Vindenes 2014
+IPMparams <- as.data.frame(rbind(mmin,mmax,n,dx,e_m,el_surv))
 
 # Length weight relationship from average in fishbase
 #ltow_A  <- function(l){0.00254*l^3.271} #length to weight function adults
 # Length weight relationship from Windermere by YV
 ltow_AYV  <-  function(l){exp(-6.49286)*l^3.4434} #length to weight function adults
+wtol_AYV <- function(w){(w/exp(-6.49286))^(1/3.4434)}
+plot(wtol_AYV(x),x,type="l", lwd=2)
+lines(1:200,ltow_AYV(1:200),col="red", type="l",lty=2, lwd=2)
 # plot(1:125,ltow_AYv(1:125),type="l")
 # lines(1:125,ltow_A(1:125),type="l", col="red")
 # Length weight relationship for juveniles from fishbase (Carlander 1969) 
@@ -169,18 +173,30 @@ DEBoff.size <- function(Pars, y=x, offvar = 24.05458^2){ #lognormal distribution
 
 ### SURVIVAL s(x,T) ####
 DEBsurvfun <- function(m, Pars) { # Mass-Temp dependence of yearly Mortality 
-  sx <- function(m, Pars){ # natural baseline survival  
-    exp((-3*m^-.288)*exp(EaS*(Pars[['T']]-T0)/(k*Pars[['T']]*T0))) #3*^-.288 is yearly mortality rate for 1 gram unit weight from Lorenzen 1996 
-    } 
+  sx <- function(m, Pars){ # natural baseline survival
+    exp(-3*m^-0.25)#*exp(EaS*(Pars[['T']]-T0)/(k*Pars[['T']]*T0))) #3*^-.288 is yearly mortality rate for 1 gram unit weight from Lorenzen 1996
+    } #conf limits Lorenzon 1996: 0.315, 0.261
+  Vsurvfun <- function(x, z=10.34){
+    sxV <- function(m, z=10.34){ # sx from Vindenes 2014
+      1/(1+exp(13.53316 - 0.50977*wtol_AYV(m) - (-0.00393)*wtol_AYV(m)^2 - 0.19312*z - (-0.00679)*wtol_AYV(m)*z))
+    }
+    xmax <- x[which(sxV(x) == max(sxV(x)))]
+    ifelse(x < xmax, sxV(x), sxV(xmax))
+  }
   sx.firstyear <- function(m, Pars){ # first year survival
-    el_surv*sx(ratefun(e_m,Pars)[round(sl/2),2,], Pars)
+    el_surv#*sx(ratefun(e_m,Pars)[round(sl/2),2,], Pars)
     }
   starvx <- function(m,Pars) { # starvation survival
     starvS <- ratefun(m, Pars)[sl,2,]
     ifelse(starvS < m, 0, 1)
     }
-  ifelse(m == e_m, sx.firstyear(m,Pars), sx(m,Pars)*starvx(m, Pars))# multiply with F (fishing mortality function)
-}
+  #ifelse(m == e_m, sx.firstyear(m,Pars), sx(m,Pars)*starvx(m, Pars))# multiply with F (fishing mortality function)
+  ifelse(m == e_m, sx.firstyear(m,Pars), Vsurvfun(m)*starvx(m, Pars))# multiply with F (fishing mortality function)
+} 
+
+plot(x,sx(x,GR_pars),type="l")
+lines(x,Vsurvfun(x),type="l", col="red")
+legend("bottomright", c("Size dep. Lorenzon", "Vindenes et al. 2014"), lty=c(1,1), col = c("black" ,"red"),  cex=0.7)
 
 ### Projection Matrix ####
 # The projection or Kernel (K) matrix maps the size distribution in time t to time t+1. 
@@ -190,60 +206,87 @@ DEBsurvfun <- function(m, Pars) { # Mass-Temp dependence of yearly Mortality
 # Fmat is the egg stage, number of eggs produced for each x which becomes y1.
 
 K.matrix <- function(Pars) {
-  Smat <- Fmat <- matrix(0,n+1,n+1) 
-  sx <- c(DEBsurvfun(e_m, Pars), DEBsurvfun(x, Pars)) # survival vector
-  Smat[2:(n+1),1] <- sx[1]*DEBoff.size(Pars) * dx # First column (and 2:101 row) of Smat is sum of survival of laid eggs, larvae and fry to age 1 (offspring size),  
-  Smat[2:(n+1),2:(n+1)] <- sx[2:(n+1)]*DEBgrowthfun(x, Pars) * dx
-  Fmat[1,2:(n+1)] <- sx[2:(n+1)]*DEBrepfun(x, Pars) #Production of eggs from each size class, (the number of eggs that x in t (size in april) will release in april in t+1) * (probability to grow from egg to age 1 (in t+2-1)
-  #Smat[,n+1] <- Smat[,n] # Question for YV if this is needed
+  Smat <- Fmat <- matrix(0,n+1,n+1)
+  surv_x <- c(DEBsurvfun(e_m, Pars), DEBsurvfun(x, Pars))  # survival vector
+  Smat[2:(n+1),1] <- surv_x[1]*DEBoff.size(Pars) * dx #dx is dy, First column (and 2:101 row) of Smat probability of transitions from egg to sizes at age 1.  
+  Smat[2:(n+1),2:(n+1)] <- t(surv_x[2:(n+1)]*t(DEBgrowthfun(x, Pars) ) * dx)
+# Smat[2:(n+1),2:(n+1)] <- t(diag(sx[2:(n+1)])%*%t(DEBgrowthfun(x, Pars) )* dx)
+  Fmat[1,2:(n+1)] <- surv_x[2:(n+1)]*DEBrepfun(x, Pars) #Production of eggs
   Smat+Fmat 
 }
 
+# hg<- wvlambda.projection(K.matrix(GR_pars))
+# sum(hg$w)*dx
+
 # This function uses function eigen() to calculate lambda, a stable structure "w" and reproductive values "v", for a projection matrix "Kmat". The stable structure is scaled so that sum(w*dx)=1 and the reproductive values are scaled so that sum(v*w*dx)=1 (see details in the article).
 # For IPMs, including threshold for setting value to zero
-wvlambda <- function(Kmat, tol=1e-20) {
-  ev <- eigen(Kmat)
-  tev <- eigen(t(Kmat))
-  lmax <- which.max(Re(ev$values))
-  W <- ev$vectors
-  V <- tev$vectors
-  w <- as.matrix(abs(Re(W[, lmax]))/sum(abs(Re(W[, lmax]))))
-  w <- ifelse(w<tol,0,w)
-  w <- w/(sum(w*dx))
-  v <- as.matrix(abs(Re(V[, lmax])))
-  # v <- v/sum(w*v*dx) # YV 2014 code producing inf with my Kernel for some T & Kappa
-  v <- ifelse(w*v*dx > tol, v/sum(w*v*dx), v/tol) # avoid producing inf
-  # v <- ifelse(is.infinite(v/(w*v*dx)), 0, v/sum(w*v*dx)) # alternative to avoid producing inf
-  v <- ifelse(w*v <= 0, 0, v)
-  return(list("lambda" = max(Re(ev$values)), "w"=w, "v"=v)) }
+# wvlambda <- function(Kmat, tol=1e-20) {
+#   ev <- eigen(Kmat)
+#   tev <- eigen(t(Kmat))
+#   lmax <- which.max(Re(ev$values))
+#   W <- ev$vectors
+#   V <- tev$vectors
+#   w <- as.matrix(abs(Re(W[, lmax]))/sum(abs(Re(W[, lmax]))))
+#   w <- ifelse(w<tol,0,w)
+#   w <- w/(sum(w*dx))
+#   v <- as.matrix(abs(Re(V[, lmax])))
+#   # v <- v/sum(w*v*dx) # YV 2014 code producing inf with my Kernel for some T & Kappa
+#   v <- ifelse(w*v*dx > tol, v/sum(w*v*dx), v/tol) # avoid producing inf
+#   # v <- ifelse(is.infinite(v/(w*v*dx)), 0, v/sum(w*v*dx)) # alternative to avoid producing inf
+#   v <- ifelse(w*v <= 0, 0, v)
+#   return(list("lambda" = max(Re(ev$values)), "w"=w, "v"=v)) }
+
+wvlambda.projection <- function(Kmat, N0=rep(10,length(Kmat[1,])), tol=1e-6) {
+  Nt <- Nt2 <- N0
+  lam <- 1
+  prev.lam <- .5
+  tKmat <- t(Kmat)
+  while( abs(lam-prev.lam) > tol ){
+    prev.lam <- lam
+    Nt.new <- Kmat %*% Nt
+    Nt.new2 <- tKmat %*% Nt2
+    lam <- sum(Nt.new) / sum(Nt)
+    Nt <- Nt.new
+    Nt2 <- Nt.new2
+  }
+  w <- Nt/sum(Nt)
+  w <- w/sum(w*dx)
+  v <- Nt2/sum(Nt.new2)
+  v <- v/sum(v*w*dx)
+  return(list("lambda"=lam, "w"=w,"v"=v))
+}
+
+# wvlambda.projection(K.matrix(GR_pars <- c(T = 283,     # parameters for Temperature, feeding, allocation and Mass dependence
+#                                           kappa = 0.75, # allocation to respiration (Growth and maintenance)
+#                                           Y = 1) ))
 
 ###CALCULATE LAMBDA, STABLE STRUCTURE AND REPRODUCTIVE VALUES FOR VARYING KAPPA AND TEMP VALUES ####
 
 ### Main RESULT - with temp x size interaction and size dep. kappa ####
 
-# T <- seq(280,292,0.5) # temperature range
-# kappa <-seq(0.5,1,0.05) # kappa range
+T <- seq(282,290,0.5) # temperature range
+kappa <- seq(0.1,1,0.05) # kappa range
 # T <- seq(280,292,0.25) # temperature range
 # kappa <-seq(0,1,0.025) # kappa range
-# Y <- 1 # feeding levels
-# 
-# Res_lam <- matrix(ncol = 3+1, nrow = length(kappa)*length(T)*length(Y)) # assuming 40 here from files
-# Res_v  <-  matrix(ncol = 3+n+1, nrow = length(kappa)*length(T)*length(Y)) # assuming 40 here from files
-# Res_w  <-  matrix(ncol = 3+n+1, nrow = length(kappa)*length(T)*length(Y)) # assuming 40 here from files
-# 
-# parsK <- as.matrix(expand.grid(T,kappa,Y))
-# colnames(parsK) <- c("T","kappa","Y")
-# 
-# for (i in 1:nrow(parsK)){
-#   res <- wvlambda(K.matrix(parsK[i,]))
-#   Res_lam[i,] <- c(parsK[i,],res$lam) #c(T[d],kappa[e],Y[f], res$lambda)
-#   Res_v[i,]   <- c(parsK[i,],res$v) #REPRODUCTIVE VALUES
-#   Res_w[i,]   <- c(parsK[i,],res$w) #STABLE STRUCTURE
-#  }
-# 
-# colnames(Res_lam) <- c("T","kappa","Y","Lambda")
-# colnames(Res_v) <- c("T","kappa","Y","0",x)
-# colnames(Res_w) <- c("T","kappa","Y","0",x)
+Y <- 1 # feeding levels
+
+Res_lam <- matrix(ncol = 3+1, nrow = length(kappa)*length(T)*length(Y)) # assuming 40 here from files
+Res_v  <-  matrix(ncol = 3+n+1, nrow = length(kappa)*length(T)*length(Y)) # assuming 40 here from files
+Res_w  <-  matrix(ncol = 3+n+1, nrow = length(kappa)*length(T)*length(Y)) # assuming 40 here from files
+
+parsK <- as.matrix(expand.grid(T,kappa,Y))
+colnames(parsK) <- c("T","kappa","Y")
+
+for (i in 1:nrow(parsK)){
+  res <- wvlambda.projection(K.matrix(parsK[i,]))
+  Res_lam[i,] <- c(parsK[i,],res$lam) #c(T[d],kappa[e],Y[f], res$lambda)
+  Res_v[i,]   <- c(parsK[i,],res$v) #REPRODUCTIVE VALUES
+  Res_w[i,]   <- c(parsK[i,],res$w) #STABLE STRUCTURE
+ }
+
+colnames(Res_lam) <- c("T","kappa","Y","Lambda")
+colnames(Res_v) <- c("T","kappa","Y","0",x)
+colnames(Res_w) <- c("T","kappa","Y","0",x)
 # 
 # write.table(Res_lam, file="Res_lam0118_MainRES.txt",quote=TRUE, sep=",", row.names=TRUE)
 # write.table(Res_v, file="Res_v0118_MainRES.txt",quote=TRUE, sep=",", row.names=TRUE)
