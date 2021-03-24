@@ -31,24 +31,24 @@ library(grid)      # for grid.text
 ## Allometric parameters (mass dependence at the reference temperature)
 rho1 <- 0.009  # Maintenance allometric scalar, rescaled from 0.02 based on pike estimated by Lindmark from Armstrong 1992.
 rho2 <- 0.87   # Maintenance allometric exponent, rescaled from 0.76 in Lindmark 2019 based on Diana 1982(?)
-eps1 <- 0.54 #614 #54 #64 # Intake allometric scalar, free parameter to fit grwth in Windermere pike.
-eps2 <- 0.58 #55 #58 # Intake allometric exponent, free parameter to fit grwth in Windermere pike.
+eps1 <- 0.49 #old 0.54 #614 #54 #64 # Intake allometric scalar, free parameter to fit grwth in Windermere pike.
+eps2 <- 0.59 #old 0.58 #55 #58 # Intake allometric exponent, free parameter to fit grwth in Windermere pike.
 ## General DEB-parameters
 alpha <- 0.4   # assimilation efficiency
 #Y2 <- 1      # feeding level for mass < 1
 sl <- 183      # Season length in days, i.e. number of growth time steps + 1
-kap_fun <- function(m, kappa=0.8, ha=6){kappa*exp(-m/(ha*max(x)))} #for size dep. kappa
+kap_fun <- function(m, kappa=0.83, ha=5){kappa*exp(-m/(ha*max(x)))} #for size dep. kappa
 #kap_fun <- function(m, kappa=0.8, ha=6){kappa*m/m} # for constant kappa
 ## Temperature scaling parameters
 T0 <-  283            # Reference Temp
 k  <-  8.617332e-05   # Boltzmann constant
-cIa <- 0     # linear interaction between size and temp for Maximum intake.
-cM  <- 0.017 # linear interaction between size and temp for Maintenance. 0.017 Lindmark unpub.
-EaI <- 0.66  # activation energy Intake, Lindmark unpub. 0.66
-EaM <- 0.61  # activation energy Maintenance, Lindmark unpub: 0.61
+cIa <- 0.005     # linear interaction between size and temp for Maximum intake.
+cM  <- 0.0026# 0.017 # linear interaction between size and temp for Maintenance. 0.017 Lindmark unpub.
+EaI <- 0.69  # activation energy Intake, Lindmark bioRxiv 0.66
+EaM <- 0.62  # activation energy Maintenance, Lindmark bioRxiv: 0.61
 EaS <- 0.47  # activation energy Survival (mortality), Brown et al. 2004
 Td  <- T0+6  # deactivation temperature. 6 degrees in Lindmark unpub.?
-cId <- -0.02 # linear interaction effect (slope) between temp and mass for deactivation. -0.02 Guesstimate to fit assumptions on temperature dependent growth
+cId <- 0 # linear interaction effect (slope) between temp and mass for deactivation. -0.02 Guesstimate to fit assumptions on temperature dependent growth
 EdI <- 2     # deactivation energy. 2 is guesstimate 
 
 DEBparams <- as.data.frame(rbind(rho1,rho2,eps1,eps2,alpha,sl,T0,
@@ -96,8 +96,8 @@ ratefun <- function(m, Pars) { # mean function for y (dependent on mass) over on
 
 ### SIZES & PARAMETERS FOR IPM ####
 mmin <- 1     # min weight
-mmax <- 16000 # max weight
-n <- 100     # row/col number of the discretization-matrix of the continuos rates
+mmax <- 18000 # max weight
+n <- 500    # row/col number of the discretization-matrix of the continuos rates
 x <- seq(mmin,mmax, length=n)
 dx <- x[2] - x[1] # step size (grams) in the continuos size spectra
 
@@ -194,9 +194,10 @@ DEBsurvfun <- function(m, Pars) { # Mass-Temp dependence of yearly Mortality
   ifelse(m == e_m, sx.firstyear(m,Pars), Vsurvfun(m)*starvx(m, Pars))# multiply with F (fishing mortality function)
 } 
 
-plot(x,sx(x,GR_pars),type="l")
-lines(x,Vsurvfun(x),type="l", col="red")
-legend("bottomright", c("Size dep. Lorenzon", "Vindenes et al. 2014"), lty=c(1,1), col = c("black" ,"red"),  cex=0.7)
+# plot(x,sx(x,GR_pars),type="l")
+# lines(x,Vsurvfun(x),type="l", col="red")
+# lines(x,sx(x,GR_pars),type="l", col="blue")
+# legend("bottomright", c("Size dep. Lorenzon, exp=0.288" , "Vindenes et al. 2014","Size dep. Lorenzon, exp=0.25"), lty=c(1,1,1), col = c("black","red", "blue"),  cex=0.7)
 
 ### Projection Matrix ####
 # The projection or Kernel (K) matrix maps the size distribution in time t to time t+1. 
@@ -256,16 +257,17 @@ wvlambda.projection <- function(Kmat, N0=rep(10,length(Kmat[1,])), tol=1e-6) {
   return(list("lambda"=lam, "w"=w,"v"=v))
 }
 
-# wvlambda.projection(K.matrix(GR_pars <- c(T = 283,     # parameters for Temperature, feeding, allocation and Mass dependence
-#                                           kappa = 0.75, # allocation to respiration (Growth and maintenance)
-#                                           Y = 1) ))
+#el_surv = 1.9e-4#1e-5 # egg & larvae survival. losely based on Kipling and Frost 1970 1/50000 from laid egg to age 2. 1.9e-4 in Vindenes 2014
+wvlambda.projection(K.matrix(Pars <- c(T = 283,     # parameters for Temperature, feeding, allocation and Mass dependence
+                                       kappa = 0.85, # allocation to respiration (Growth and maintenance)
+                                      Y = 1) ))[1]
 
 ###CALCULATE LAMBDA, STABLE STRUCTURE AND REPRODUCTIVE VALUES FOR VARYING KAPPA AND TEMP VALUES ####
 
 ### Main RESULT - with temp x size interaction and size dep. kappa ####
-
-T <- seq(282,290,0.5) # temperature range
-kappa <- seq(0.1,1,0.05) # kappa range
+# The model dont work T = 292
+T <- seq(281,290.5,0.5) # temperature range
+kappa <- seq(0.6,1,0.04) # kappa range
 # T <- seq(280,292,0.25) # temperature range
 # kappa <-seq(0,1,0.025) # kappa range
 Y <- 1 # feeding levels
@@ -287,10 +289,25 @@ for (i in 1:nrow(parsK)){
 colnames(Res_lam) <- c("T","kappa","Y","Lambda")
 colnames(Res_v) <- c("T","kappa","Y","0",x)
 colnames(Res_w) <- c("T","kappa","Y","0",x)
+#temp_lam <- Res_lam
+#temp_v <- Res_v
+#temp_w <- Res_w
+# Resl <- rbind(na.omit(temp_lam),Res_lam)
+# Resv <- rbind(na.omit(temp_v),Res_v)
+# Resw <- rbind(na.omit(temp_w),Res_w)
+# Res_lam <- Res_lam[-c(321:346),] #%>%
+# Res_v <- Res_v[-c(321:346),] #%>% 
+# Res_w <- Res_w[-c(321:346),] #%>% 
+  
+duplicated(distinct(as.tibble(Res_lam), T, kappa))
+Res_lam[,2]<- as.numeric(Res_lam[,2])
+# Res_lam <- Resl
+# Res_v <- Resv
+# Res_w <- Resw
 # 
-# write.table(Res_lam, file="Res_lam0118_MainRES.txt",quote=TRUE, sep=",", row.names=TRUE)
-# write.table(Res_v, file="Res_v0118_MainRES.txt",quote=TRUE, sep=",", row.names=TRUE)
-# write.table(Res_w, file="Res_w0118_MainRES.txt",quote=TRUE, sep=",", row.names=TRUE)
+# write.table(Res_lam, file="Res_lam0316_baseline_Onlyyellow_n500.txt",quote=TRUE, sep=",", row.names=TRUE)
+ #write.table(Res_v, file="Res_v0316__baseline_Onlyyellow_n500.txt",quote=TRUE, sep=",", row.names=TRUE)
+ #write.table(Res_w, file="Res_w0316__baseline_Onlyyellow_n500.txt",quote=TRUE, sep=",", row.names=TRUE)
 # 
 
 # ### Contrast RESULT 1 - no temp x size interaction but size dep. kappa ####
