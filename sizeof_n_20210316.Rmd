@@ -15,7 +15,7 @@ Yes...
 
 ```{r}
 mmin <- 1     # min weight
-mmax <- 16000 # max weight
+mmax <- 18000 # max weight
 n <- 100    # row/col number of the discretization-matrix of the continuos rates
 x <- seq(mmin,mmax, length=n)
 dx <- x[2] - x[1] # step size (grams) in the continuos size spectra
@@ -55,7 +55,7 @@ Yes it does, lmbda decreases with n, and this is good because then $el_{surv} = 
 
 ```{r}
 mmin <- 1     # min weight
-mmax <- 16000 # max weight
+mmax <- 18000 # max weight
 n <- 100    # row/col number of the discretization-matrix of the continuos rates
 x <- seq(mmin,mmax, length=n)
 dx <- x[2] - x[1] # step size (grams) in the continuos size spectra
@@ -84,23 +84,24 @@ dx <- x[2] - x[1] # step size (grams) in the continuos size spectra
 wvlambda.projection(K.matrix(GR_pars <- c(T = 283, kappa = 0.8, Y = 1) ))[1]
 
 ```
-```
-ns <- seq(100,2000,100)
+```{r}
+ns <- seq(400,1500,100)
 nlam=data.frame()
 for(i in ns){
     n <- i
     x <- seq(mmin,mmax, length=n)
     dx <- x[2] - x[1] # step size (grams) in the continuos size 
-    lam <- wvlambda.projection(K.matrix(GR_pars <- c(T = 283,                                           kappa = 0.8, 
+    lam <- wvlambda.projection(K.matrix(GR_pars <- c(T = 287,                                           kappa = 0.81, 
                                       Y = 1) ))[[1]]
     nlam <- rbind(nlam,c(i,lam))
     }
 colnames(nlam) <- c("n","lambda")
+#write.table(nlam, file="nlam_Robustscaling_20210326.txt",quote=TRUE, sep=",", row.names=TRUE)
 ```
 
 ```{r}
 nlam
-nlam <- read.delim("nlam0316_LindmarkScaling.txt", sep = ",")
+#nlam <- read.delim("nlam0316_LindmarkScaling.txt", sep = ",")
 plot(nlam$n,nlam$lam, type="l", main = "Effect of bin size (n) on lambda")
 ```
 

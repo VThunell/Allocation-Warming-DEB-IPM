@@ -4,19 +4,18 @@
 #setwd("C:/Users/vitl0001/VThunell_repos/Temperature-DEBIPM")
 #source("Thunell_DEBIPM_model_20210105_HAkappa.R")
 
-
 library(scales)
 library(patchwork)
 
 #Plot-parameter s for IPM vital rate functions needed for some plots
-GR_pars <- c(T = 283,     # parameters for Temperature, feeding, allocation and Mass dependence
-             kappa = 0.85, # allocation to respiration (Growth and maintenance)
+GR_pars <- c(T = 287,     # parameters for Temperature, feeding, allocation and Mass dependence
+             kappa = 0.81, # allocation to respiration (Growth and maintenance)
              Y = 1)         # Feeding level
 
 ## PLOT MASS AND TEMPERATURE FUNCTIONS ####
 ### Plot mass functions fo kappa=0.8
-plot(x, kap_fun(x), yla = "kappa", type="l", main = "Size-dependent kappa")
-plot(x, 1-kap_fun(x), ylab = "1-kappa", type="l", main = "Size-dependent 1-kappa")
+plot(x, kap_fun(x, ha=5), yla = "kappa", type="l", ylim= c(0,1),main = "Size-dependent kappa")
+lines(x, 1-kap_fun(x, ha=3), ylab = "1-kappa", type="l", main = "Size-dependent 1-kappa", col="red")
 Y <- 1
 par(mar = c(5,5,4,2) + 0.1) ## default is c(5,4,4,2) + 0.1
 plot(x,kap_fun(x)*alpha*Y*eps1*x^eps2, #Imax, 
@@ -27,12 +26,12 @@ lines(x,eps1*x^eps2, col= "blue") #Imax,
 legend("topleft", c("Growth energy (Intake*kappa*alpha*Y)", "Maintenance rate","Max intake rate"), lty=c(2,1,1), col = c("black" ,"red", "blue"),  cex=0.7)
 
 ### Plot Temp functions 
-plot(280:294, rI_T_GU2(280:294, 10), ylim=c(0,3), type = "l", xlab="Temperature [K]", ylab="Temp. effect", main= "Temperature effect on rates, Tref = 283 K")
+plot(280:294, rI_T_GU2(280:294, 10), ylim=c(0,2), type = "l", xlab="Temperature [K]", ylab="Temp. effect", main= "Temperature effect on rates, Tref = 287 K")
 lines(280:294, rM_T_AL2(280:294, 10), col="red")
 legend("topleft", c("Max Ingestion (Gardmark unimodal)", "Maintenance (Lindmark 2018)"),lty=c(1,1), col =c("black" ,"red"),  cex=0.7)
 
 ##### PLOT ENERGY BUDGET OVER TEMP AND MASS ####
-Temp <- 280:294
+Temp <- 283:294
 T_rates = NULL
 for(i in Temp) {
   maint <- rho1*(x^rho2)*rM_T_AL2(i, x)
@@ -72,16 +71,15 @@ T_rates_long %>%
 
 # Build a dataframe of sizes, fecundity, temperatures and kappas using ratefun()
 
-Temp = 275:288   # temperatures
-Kap  = 0.8 #c(0.75,0.8,0.85)  # kappas, allocation to growth (roughly 0.85 in Windermere pike)
+Temp = seq(283,291,2)   # temperatures
+Kap  = 0.81 #c(0.75,0.8,0.85)  # kappas, allocation to growth (roughly 0.85 in Windermere pike)
 Y = 1
 parsP <- as.matrix(expand.grid(Temp,Kap,Y))
 colnames(parsP) <- c("T","kappa","Y")
-outR=NULL
-
+outR = NULL
 for (i in 1:nrow(parsP)){
   plotpars <- parsP[i,]
-  for(seas in 1:25) { # growth from age 1 happens in this for-loop, 25 years is from age 2 to 26
+  for(seas in 1:20) { # growth from age 1 happens in this for-loop, 25 years is from age 2 to 26
     if(seas == 1) {
         offmean <- ratefun(e_m, plotpars)[round(sl/2),2,]
         p <- data.frame(mass = ratefun(offmean, plotpars)[sl,2,],
@@ -101,39 +99,41 @@ for (i in 1:nrow(parsP)){
   outR <- bind_rows(outR,p)
 }
 
- # Plot mass over Age for the different Temps
+# Plot mass over Age for the different Temps
 outR %>%
-  filter(Temp %in% c(279, 281, 283, 285, 287)) %>% #Floating point issue when comparing vector, therefore the use of %in%, can also use near()
+  #filter(Temp %in% c(283, 285, 287, 289,291)) %>% #Floating point issue when comparing vector, therefore the use of %in%, can also use near()
   ggplot(.) +
   geom_point(data=GData, aes(Age, ltow_AYV(Length)), alpha=0.1) +
   geom_line(size=1,  aes(age, mass, color = as.factor(Temp))) +
   facet_wrap(vars(kappa), labeller = label_both, scales="free_y") +
   xlab("age") +
   ylab("mass [g]") +
+  xlim(0,15)+
+  coord_cartesian(ylim = c(0,16000)) +
   theme_bw() +  
+  #theme(legend.position="none")+
   scale_colour_brewer(palette="Dark2")
-
+  
 ### PLOT RATE FUNCTION FOR IPM ####
 
 ### Plot growth fun ####
 plot(x,  DEBgrowthfun(14000, y=x, GR_pars)*dx, type="l", ylab="DEBgrowth(y;x)", 
      xlab="y", main = "Prob. density of DEBgrowth(x,y)")
 lines(x, DEBgrowthfun(10000, y=x, GR_pars)*dx, lty=2)
-
 lines(x, DEBgrowthfun(1000, y=x, GR_pars)*dx, lty=3)
 lines(x, DEBgrowthfun(100, y=x, GR_pars)*dx, lty=4) # values >~8100 are highly unlikley to grow into as y=x??
 legend("topleft", c("14000","10000","1000","100"), lty=c(1,2,3,4), cex = 0.7, title="mass [g]")
 
 # Plot growth against Windermere pikes ####
 outR %>%
- filter(Temp == 283) %>%
+ filter(Temp == 287) %>%
  plot(mass~age, data=., lwd = 2, type = "l", col = "red", ylim = c(0,17000))
  points(GData2$Age, ltow_AYV(GData2$Length))
  legend("bottomright", c("DEB", "Windermere Pike"), col=c("red","black"),lty=c(1, NA), pch =c(NA,1,NA), cex = 0.75)
 
 # Plot individual growth trajectories or size at age of Windermere pike
 outR %>%
- filter(Temp == 283) %>%
+ filter(Temp == 287) %>%
  ggplot(., aes(age, mass)) +
  geom_line(data=GData, aes(Age, ltow_AYV(Length), group = as.factor(Ind))) +
  geom_line(size=1, color = "red") +
@@ -147,19 +147,21 @@ outR %>%
 
 # Plot DEBrepfun and windermere data ####
 plot(FData$Weight,FData$Eggs,ylab="#eggs in t+1", xlab = "weight in t+1",
-     main = "fecundity in t+1", ylim = c(0,600000)) # Windermere Pike data
+     main = "fecundity in t+1", ylim = c(0,600000),xlim = c(0,18000)) # Windermere Pike data
+abline(lm(FData$Eggs~FData$Weight), col="blue",lwd=1)      
 #lines(ratefun(x,GR_pars)[183,2,],DEBrepfun(x,GR_pars),type = "l", col="blue")
 outR %>%
-  filter(Temp == 283) %>%
+  filter(Temp == 287) %>%
   lines(re~mass, data=., lwd = 2, type = "l", col = "red")
-  legend("topleft", c("DEB", "Windermere Pike"), 
-       lty=c(1, NA), pch =c(NA,1), col= c("red","black"),cex=.7)
+  legend("topleft", c("DEB", "Windermere Pike", "lm(Windermere Pike)"), 
+       lty=c(1, NA), pch =c(NA,1), col= c("red","black", "blue"),cex=.7)
 
 outR %>%
-  filter(Temp %in% c(277,279,281,283,285,287)) %>%
+  filter(Temp %in% c(283,285,287,289)) %>%
   ggplot(.) +
     geom_point(data=FData, aes(Weight, Eggs), alpha=0.1) +
     geom_line(size=1,  aes(mass, re, color = as.factor(Temp))) +
+    xlim(0,20000)+
     theme_bw() +  
     scale_colour_brewer(palette="Dark2")
 
@@ -226,7 +228,7 @@ Tsur_long %>%
 ### PLOT LAMBDA AS A FUNCTION OF KAPPA AND/OR TEMP ####
 #pdf("\\\\storage-og.slu.se/home$/vitl0001/Desktop/Survival_Sizeexp0261N01_20210216.pdf", width = 8, height = 3.5)
 #pdf("\\\\storage-og.slu.se/home$/vitl0001/Desktop/kappaTlamdba_20201120.pdf", width = 8, height = 3.5)
-a <- as.tibble(Res_lam) %>%
+a <- as_tibble(Res_lam) %>%
   #filter(T %in% c(277, 279, 281, 283, 285, 287, 289)) %>%
   ggplot(., aes(kappa, Lambda, color = as.factor(T))) +
   geom_line(size=0.5) +
@@ -249,7 +251,7 @@ b <-
    scale_fill_gradientn(
      limits = c(0,max(as.data.frame(Res_lam[,'Lambda'])+0.0001)),
      colours = c("black","white","yellow","red"),
-     values = rescale(c(0,0.999999,1, round(max(as.data.frame(Res_lam[,'Lambda'])), 6)), to=c(0,1)),
+     values = rescale(c(0,0.99999,1, round(max(as.data.frame(Res_lam[,'Lambda'])), 6)), to=c(0,1)),
      breaks = c(0,1),
      #labels=c("0",1,round(max(as.data.frame(Res_lam[,'Lambda'])),3)),
      name = expression(lambda)) +
@@ -270,28 +272,30 @@ Res_w_long <- pivot_longer(as.data.frame(Res_w), cols = c(5:ncol(Res_w)),
 
 c <- Res_w_long %>%
   #filter(T %in% c(277, 281, 283, 287, 290)) %>%
-  filter(as.character(T) %in% c("281","283","285")) %>%
+  #filter(as.character(T) %in% c(283,285,287,289, 291)) %>%
+  filter(as.character(T) %in% c(285,287,289)) %>%
   #filter(kappa %in% 0.8) %>% #Floating point issue when comparing vector, therefore the use of %in%, can also use near()
-  filter(as.character(kappa) %in% "0.92") %>% #Floating point issue when comparing vector, therefore the use of %in%, can also use near()
+  filter(as.character(kappa) %in% 0.85) %>% #Floating point issue when comparing vector, therefore the use of %in%, can also use near()
   ggplot(., aes(as.numeric(Size), biom, color = as.factor(T))) +
   ggtitle("Stable structure for small Sizes, kappa=0.8") + 
   geom_line(size=0.5) +
   ylab("Stable structure w") +
   xlab("Size") +
-  xlim(0,1000) +
+  xlim(0,2000) +
   theme_bw() +
-  theme(legend.position="none", 
+  theme(legend.position="none",
   plot.title = element_text(size = 12))+
   labs(color = "Temp [K]")
 c
 d <- Res_w_long %>%
-  #filter(T %in% c(277, 281, 283, 287, 290)) %>%
+#  filter(T %in% c(283, 285, 287, 289, 290)) %>%
   #filter(kappa %in% 0.8) %>% #Floating point issue when comparing vector, therefore the use of %in%, can also use near()
-  #filter(kappa %in% 0.9) %>% #Floating point issue when comparing vector, therefore the use of %in%, can also use near()
-  filter(as.character(T) %in% c("281","283","285")) %>%
+  filter(as.character(kappa) %in% 0.85) %>% #Floating point issue when comparing vector, therefore the use of %in%, can also use near()
+  filter(as.character(T) %in% c(285,287,289)) %>%
+  #  filter(as.character(T) %in% c(283, 285, 287, 289, 290)) %>%
   #filter(kappa %in% 0.8) %>% #Floating point issue when comparing vector, therefore the use of %in%, can also use near()
-  filter(as.character(kappa) %in% "0.92") %>% #Floating point issue when comparing vector, therefore the use of %in%, can also use near()
-    ggplot(., aes(as.numeric(Size), biom, color = as.factor(T))) +
+  #filter(as.character(kappa) %in% "0.92") %>% #Floating point issue when comparing vector, therefore the use of %in%, can also use near()
+  ggplot(., aes(as.numeric(Size), biom, color = as.factor(T))) +
   ggtitle("Stable struct w/o Age 1, kappa=0.8") + 
   geom_line(size=0.5) +
   ylab("Stable structure w") +
@@ -299,7 +303,7 @@ d <- Res_w_long %>%
   ylim(0,5e-8)+
   theme_bw()+
   theme(legend.position="none", 
-    plot.title = element_text(size = 12)) +
+  plot.title = element_text(size = 12)) +
   labs(color = "Temp [K]")
 d
 # Res_w_long %>%
@@ -314,6 +318,7 @@ d
 #   theme_bw()+
 #   labs(color = expression(kappa))
 
+
 ### PLOT REPRODUCTIVE VALUES V AS A FUNCTION OF KAPPA AND/OR TEMP ####
 colnames(Res_v) <- c("T","kappa","Y","0",x)
 Res_v_long <- pivot_longer(as_tibble(Res_v), cols = c(5:ncol(Res_v)), 
@@ -322,8 +327,8 @@ Res_v_long <- pivot_longer(as_tibble(Res_v), cols = c(5:ncol(Res_v)),
 e<-Res_v_long %>%
 #  filter(T %in% c(277, 281, 283, 287, 290)) %>%
   #filter(kappa %in% 0.8) %>% #Floating point issue when comparing vector, therefore the use of %in%, can also use near()
-  filter(as.character(T) %in% c("281","283","285")) %>%
-  filter(as.character(kappa) %in% "0.92") %>% #Floating point issue when comparing vector, therefore the use of %in%, can also use near()
+  filter(as.character(T) %in% c(285, 287, 289)) %>%
+  filter(as.character(kappa) %in% 0.85) %>% #Floating point issue when comparing vector, therefore the use of %in%, can also use near()
   ggplot(., aes(as.numeric(Size), biom, color = as.factor(T))) +#, linetype = as.factor(kappa))) +
   ggtitle("Repro. values over Size") + 
   geom_line(size=0.8) +
@@ -333,7 +338,7 @@ e<-Res_v_long %>%
   labs(color = "Temp [K]")
 e
 library(gridExtra)
-pdf("DEBIPM_Baseline_20210324.pdf", width = 8, height = 6)
+pdf("DEBIPM_SizeSurv_20210326_Robust.pdf", width = 8, height = 6)
 (a+b) / (c+d+e)
 # grid.arrange(
 # tableGrob(DEBparams, rownames(DEBparams)),
