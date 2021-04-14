@@ -222,7 +222,7 @@ write.table(Res_w, file="Res_w_4_0406.txt",quote=TRUE, sep=",", row.names=TRUE)
 
 ### RESULT 5 ####
 
-cIa <- 0.08
+cIa <- 0.008
 
 DEBsurvfun <- function(m, Pars) { # Mass-Temp dependence of yearly Mortality 
   sx <- function(m, Pars){ # natural baseline survival
