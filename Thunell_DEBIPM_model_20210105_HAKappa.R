@@ -12,57 +12,6 @@
 #setwd("C:/Users/vitl0001/VThunell_repos/Temperature-DEBIPM")
 YVPike <- load("~/Manus2/R/Manus2R/PikeDataFiles.R")
 
-# Size and Age dependnent GSI in lake windermere
-# NoNaFData <- as.data.frame(cbind(as.numeric(as.character(FData$Gonad)),FData$Weight, FData$Age.capt))
-# colnames(NoNaFData) <- c("Gonad","Weight", "Age.capt")
-# NoNaFData <- NoNaFData[!is.na(NoNaFData$Gonad),]
-# NoNaFData$Gonad/NoNaFData$Weight
-# mean(NoNaFData[NoNaFData$Age.capt==2,]$Gonad/NoNaFData[NoNaFData$Age.capt==2,]$Weight)
-# 
-# 
-# jf<-NULL
-# for (i in 2:18) {
-#   Gon2 <- mean(NoNaFData[NoNaFData$Age.capt==i,]$Gonad)
-#   Wei2 <- mean(NoNaFData[NoNaFData$Age.capt==i,]$Weight)
-#   WeiInc2 <- mean(ltow_AYV(GData[GData$Age==i,]$Length)-
-#                     ltow_AYV(GData[GData$Age==i,]$Length.prev))
-#     jf<- rbind(jf,c(Gon2/(Gon2+WeiInc2),WeiInc2/(Gon2+WeiInc2),i)) 
-#           }
-# jf<-
-# plot(NoNaFData$Age.capt,NoNaFData$Gonad/NoNaFData$Weight)
-# abline(lm((NoNaFData$Gonad/NoNaFData$Weight)~NoNaFData$Age.cap))
-# jf[c(1:13,17),]
-# 
-# Gon <- mean(NoNaFData$Gonad)
-# Wei <- mean(NoNaFData$Weight)
-# WeiInc <- mean(ltow_AYV(GData[!GData$Age==1,]$Length)-ltow_AYV(GData[!GData$Age==1,]$Length.prev))
-# Gon/(Gon+WeiInc)
-# WeiInc/(Gon+WeiInc)
-# 
-# 
-# plot(ltow_AYV(GData[!GData$Age==1,]$Length.prev),
-#      (ltow_AYV(GData[!GData$Age==1,]$Length)-ltow_AYV(GData[!GData$Age==1,]$Length.prev))/
-#        ltow_AYV(GData[!GData$Age==1,]$Length.prev), ylim=c(0,1))
-# A_k<-NULL
-# for (i in 1:max(NoNaFData$Age.capt)) {
-#   ph<-mean(NoNaFData[NoNaFData$Age.capt==i,]$Gonad/NoNaFData[NoNaFData$Age.capt==i,]$Weight)
-#   A_k<-rbind(A_k,c(i,ph))
-# }
-# plot(A_k[,1],A_k[,2])
-# abline(lm(A_k[,2]~A_k[,1]))
-
-# FData[!is.na(FData$Gonad),] %>%
-# mean(1-as.numeric(as.character(FData$Gonad))/NoNaFData$Weight)
-# plot(lm(NoNaFData$Gonad/NoNaFData$Weight~NoNaFData$Weight) )
-# plot(NoNaFData$Weight,NoNaFData$Gonad/NoNaFData$Weight)
-# abline(lm(NoNaFData$Gonad/NoNaFData$Weight~NoNaFData$Weight), col="blue",lwd=1)
-# mean(1-as.numeric(as.character(FData[FData$Age.capt==2,]$Gonad))/FData[FData$Age.capt==2,]$Weight)
-# 
-# mean((ltow_AYV(GData$Length)-ltow_AYV(GData$Length.prev)) / ltow_AYV(GData$Length))
-# plot(ltow_AYV(GData$Length.prev),(ltow_AYV(GData$Length)-ltow_AYV(GData$Length.prev))/ltow_AYV(GData$Length))
-# abline(lm((ltow_AYV(GData$Length)-ltow_AYV(GData$Length.prev))/ltow_AYV(GData$Length)~ltow_AYV(GData$Length.prev)))
-# GData2$
-
 ### Packages ####
 #install.packages("deSolve")
 library(deSolve)   # for ode Solver
@@ -89,16 +38,11 @@ rho2 <- 0.76 # 0.83 for 287  # Maintenance allometric exponent, rescaled from 0.
 eps1 <- 0.69 #0.51 #45 #old 0.54 #614 #54 #64 # Intake allometric scalar, free parameter to fit grwth in Windermere pike.
 eps2 <- 0.54 #0.574 #59 #old 0.58 #55 #58 # Intake allometric exponent, free parameter to fit grwth in Windermere pike.
 
-#0.43/0.7
 ## General DEB-parameters
 alpha <- 0.4   # assimilation efficiency
 #Y2 <- 1      # feeding level for mass < 1
 sl <- 183      # Season length in days, i.e. number of growth time steps + 1
 kap_fun <- function(m, kappa, ha=1.5){kappa*exp(-m/(ha*max(x)))} #for size dep. kappa
-#kap_fun <- function(m, kappa, ha=1.5){kappa*m/m} # for constant kappa
-
-ratefun(e_m, GR_pars)[round(sl/2),2,] 
-kap_fun(374,1.10,ha=0.25)
 
 ## Temperature scaling parameters
 T0 <-  292            # Reference Temp
@@ -118,7 +62,6 @@ DEBparams <- as.data.frame(rbind(rho1,rho2,eps1,eps2,alpha,sl,T0,
 # Arrhenius-Lindmark function (AL, Boltzmann-Arrhenius with interaction between Mass & Temp)
 rM_T_AL2 <- function(T, m) { # AL Temp dependence of Maintenance 
   (m^(cM*(T-T0)))*exp(EaM*(T-T0)/(k*T*T0)) }
-
 
 # Gardmark Unimodal function
 rI_T_GU2 <- function(T, m) { # GU Temp dependence of intake 
@@ -140,9 +83,9 @@ rI_T_GU2 <- function(T, m) { # GU Temp dependence of intake
 
 dwdt <- function(time, m, Pars) {
   maintenance <- (rho1*(m^rho2)*rM_T_AL2(Pars['T'], m))   # Maintenance rate at time, mass with Pars
-  #ifelse(m > 1,
+  #ifelse(m >= 1,
   intake <- alpha*Pars['Y']*eps1*(m^eps2)*rI_T_GU2(Pars['T'], m)#,
-  #    intake <- (alpha*Y2*eps1*(m^eps2)*rI_T_GU2(Pars['T'], m))) # Intake energy rate at time, mass with Pars, NOTE intake rate multiplied with alpha and Y
+  #intake <- (alpha*Y2*eps1*(m^eps2)*rI_T_GU2(Pars['T'], m))) # Intake energy rate at time, mass with Pars, NOTE intake rate multiplied with alpha and Y
   mass <- kap_fun(m,Pars["kappa"])*intake - maintenance    # Growth rate at time, mass with Pars
   #mass <- Pars['kappa']*intake - maintenance    # Growth rate at time, mass with Pars
   return(list(mass, maintenance, intake)) # return all rates
@@ -175,13 +118,11 @@ e_m <- 0.00351388  # Egg mass calculated from windermere pike: mean(FData$Egg.we
 el_surv = 1.9e-4#1e-5 # egg & larvae survival. losely based on Kipling and Frost 1970 1/50000 from laid egg to age 2. 1.9e-4 in Vindenes 2014
 IPMparams <- as.data.frame(rbind(mmin,mmax,n,dx,e_m,el_surv))
 
-# Length weight relationship from average in fishbase
-# ltow_A  <- function(l){0.00254*l^3.271} #length to weight function adults
 # Length weight relationship from Windermere by YV
 ltow_AYV  <-  function(l){exp(-6.49286)*l^3.4434} #length to weight function adults
 wtol_AYV <- function(w){(w/exp(-6.49286))^(1/3.4434)}
-plot(wtol_AYV(x),x,type="l", lwd=2)
-lines(1:200,ltow_AYV(1:200),col="red", type="l",lty=2, lwd=2)
+#plot(wtol_AYV(x),x,type="l", lwd=2)
+#lines(1:200,ltow_AYV(1:200),col="red", type="l",lty=2, lwd=2)
 # Length weight relationship for juveniles from fishbase (Carlander 1969) 
 # ltow_J <- function(l){0.01101*l^2.69} #length to weight function juveniles
 
@@ -237,8 +178,6 @@ DEBoff.size <- function(Pars, y=x, offvar = 24.05458^2){ #lognormal distribution
       yd/sum(yd*dx) # scaled distributon to 1, dx is step size in the k-matrix
 }
 
-
-
 ### SURVIVAL s(x,T) ####
 DEBsurvfun <- function(m, Pars) { # Mass-Temp dependence of yearly Mortality 
   sx <- function(m, Pars){ # natural baseline survival
@@ -259,27 +198,24 @@ DEBsurvfun <- function(m, Pars) { # Mass-Temp dependence of yearly Mortality
     ifelse(starvS < m | starvS > 18000, 0, 1)
     }
   #ifelse(m == e_m, sx.firstyear(m,Pars), sx(m,Pars)*starvx(m, Pars))# multiply with F (fishing mortality function)
-  ifelse(m == e_m, sx.firstyear(m,Pars), Vsurvfun(m)*starvx(m, Pars))# multiply with F (fishing mortality function)
+  ifelse(m < 1, sx.firstyear(m,Pars), Vsurvfun(m)*starvx(m, Pars))# multiply with F (fishing mortality function)
   #ifelse(m == e_m, sx.firstyear(m,Pars), 0.67*starvx(m, Pars))# multiply with F (fishing mortality function)
 } 
 
 # starvx(17212, Pars=c(T = 285, kappa = 0.83, Y = 1))
 # ratefun(17220, Pars=c(T = 285, kappa = 0.83, Y = 1))[sl,2,]
-# 
-survi<-as.tibble(cbind(x,sx(x,GR_pars),Vsurvfun(x)))
-ggplot(survi)+
-       geom_line(aes(x,V2))+
-       geom_line(aes(x,V3), color = "red")
-plot(x,sx(x,GR_pars),type="l", col="blue", ylim=c(0,1))
-lines(x,Vsurvfun(x),type="l", col="red")
-GR_pars <- c(T = 287,     # parameters for Temperature, feeding, allocation and Mass dependence
-             kappa = 0.93, # allocation to respiration (Growth and maintenance)
-             Y = 1)         # Feeding level
-lines(x,sx(x,GR_pars),type="l", col="blue")
-legend("bottomright", c("Size dep. Lorenzon, exp=0.20" , "Vindenes et al. 2014","Size dep. Lorenzon, exp=0.288"), lty=c(1,1,1), col = c("green","red", "blue"),  cex=0.7)
-Vsurvfun(1000)
+# # survi<-as.tibble(cbind(x,sx(x,GR_pars),Vsurvfun(x)))
+# ggplot(survi)+
+#        geom_line(aes(x,V2))+
+#        geom_line(aes(x,V3), color = "red")
+# plot(x,sx(x,GR_pars),type="l", col="blue", ylim=c(0,1))
+# lines(x,Vsurvfun(x),type="l", col="red")
+# GR_pars <- c(T = 287,     # parameters for Temperature, feeding, allocation and Mass dependence
+#              kappa = 0.93, # allocation to respiration (Growth and maintenance)
+#              Y = 1)         # Feeding level
+# lines(x,sx(x,GR_pars),type="l", col="blue")
+# legend("bottomright", c("Size dep. Lorenzon, exp=0.20" , "Vindenes et al. 2014","Size dep. Lorenzon, exp=0.288"), lty=c(1,1,1), col = c("green","red", "blue"),  cex=0.7)
 
-dev.off()
 ### Projection Matrix ####
 # The projection or Kernel (K) matrix maps the size distribution in time t to time t+1. 
 # Smat column 1 describes the probality of an egg to hatch and grow into size y in t+1 or the density distribution of offspring size y, 
@@ -338,12 +274,11 @@ wvlambda.projection <- function(Kmat, N0=rep(10,length(Kmat[1,])), tol=1e-6) {
   return(list("lambda"=lam, "w"=w,"v"=v))
 }
 
-#el_surv = 1.9e-4#1e-5 # egg & larvae survival. losely based on Kipling and Frost 1970 1/50000 from laid egg to age 2. 1.9e-4 in Vindenes 2014
-tic()
-wvlambda.projection(K.matrix(Pars <- c(T = 287,     # parameters for Temperature, feeding, allocation and Mass dependence
-                                       kappa = 0.93, # allocation to respiration (Growth and maintenance)
-                                     Y = 1) ))[1]
-toc()
+# tic()
+# wvlambda.projection(K.matrix(Pars <- c(T = 287,     # parameters for Temperature, feeding, allocation and Mass dependence
+#                                        kappa = 0.93, # allocation to respiration (Growth and maintenance)
+#                                      Y = 1) ))[1]
+# toc()
 
 ### COHORT PROJECTION MODEL ####
 K.matrixCohort <- function(Pars) {
@@ -355,7 +290,6 @@ K.matrixCohort <- function(Pars) {
   Smat+Fmat 
 }
 
-t=6 # timesteps, years
 ProjCoh <- function(Pars,t,I_pop=c(5000000,rep(0,n))) {
   Coh<-K.matrixCohort(Pars)
   for (i in 1:t){
@@ -370,171 +304,165 @@ ProjCoh <- function(Pars,t,I_pop=c(5000000,rep(0,n))) {
 ###CALCULATE LAMBDA, STABLE STRUCTURE AND REPRODUCTIVE VALUES FOR VARYING KAPPA AND TEMP VALUES ####
 
 ### Main RESULT - with temp x size interaction and size dep. kappa ####
-# The model dont work T = 292
-T <- seq(285,290,0.3) # temperature range
-kappa <- seq(0.6,1,0.04) # kappa range
 
-# T <- seq(280,292,0.25) # temperature range
-# kappa <-seq(0,1,0.025) # kappa range
-Y <- 1 # feeding levels
-
-Res_lam <- matrix(ncol = 3+1, nrow = length(kappa)*length(T)*length(Y)) # assuming 40 here from files
-#length(Res_lam)
-Res_v  <-  matrix(ncol = 3+n+1, nrow = length(kappa)*length(T)*length(Y)) # assuming 40 here from files
-Res_w  <-  matrix(ncol = 3+n+1, nrow = length(kappa)*length(T)*length(Y)) # assuming 40 here from files
-
-# Res_lam <- matrix(ncol = 3+1, nrow = length(ha_Ad)*length(T)*length(Y)) # assuming 40 here from files
-# Res_v  <-  matrix(ncol = 3+n+1, nrow = length(ha_Ad)*length(T)*length(Y)) # assuming 40 here from files
-# Res_w  <-  matrix(ncol = 3+n+1, nrow = length(ha_Ad)*length(T)*length(Y)) # assuming 40 here from files
-
-parsK <- as.matrix(expand.grid(T,kappa,Y))
-colnames(parsK) <- c("T","kappa","Y")
-
-tic()
-for (i in 1:nrow(parsK)){
-  res <- wvlambda.projection(K.matrix(parsK[i,]))
-  Res_lam[i,] <- c(parsK[i,],res$lam) #c(T[d],kappa[e],Y[f], res$lambda)
-  Res_v[i,]   <- c(parsK[i,],res$v) #REPRODUCTIVE VALUES
-  Res_w[i,]   <- c(parsK[i,],res$w) #STABLE STRUCTURE
- }
-toc()
-
-colnames(Res_lam) <- c("T","kappa","Y","Lambda")
-colnames(Res_v) <- c("T","kappa","Y","0",x)
-colnames(Res_w) <- c("T","kappa","Y","0",x)
-
-#temp_lam <- Res_lam
-#temp_v <- Res_v
-#temp_w <- Res_w
-# Resl <- rbind(na.omit(temp_lam),Res_lam)
-# Resv <- rbind(na.omit(temp_v),Res_v)
-# Resw <- rbind(na.omit(temp_w),Res_w)
-# Res_lam <- Res_lam[-c(321:346),] #%>%
-# Res_v <- Res_v[-c(321:346),] #%>% 
-# Res_w <- Res_w[-c(321:346),] #%>% 
-# duplicated(distinct(as.tibble(Res_lam), T, kappa))
-# Res_lam[,2]<- as.numeric(Res_lam[,2])
-# Res_lam <- Resl
-# Res_v <- Resv
-# Res_w <- Resw
-# 
-# write.table(Res_lam, file="Res_lam0316_baseline_Onlyyellow_n500.txt",quote=TRUE, sep=",", row.names=TRUE)
-#write.table(Res_v, file="Res_v0316__baseline_Onlyyellow_n500.txt",quote=TRUE, sep=",", row.names=TRUE)
-#write.table(Res_w, file="Res_w0316__baseline_Onlyyellow_n500.txt",quote=TRUE, sep=",", row.names=TRUE)
-# 
-
-# ### Contrast RESULT 1 - no temp x size interaction but size dep. kappa ####
-# 
-# cM <-  0 # linear interaction between size and temp for Maintenance.
-# cId <- 0 # linear interaction effect (slope) between temp and mass for deactivation.
-# # eps1 = 0.55 # Intake allometric scalar, free parameter to fit growth in Windermere pike.
-# # eps2 = 0.58 # Intake allometric exponent,  free parameter to fit growth in Windermere pike.
-# 
-# T <- seq(280,292,0.25) # temperature range
-# kappa <-seq(0,1,0.025) # kappa range
-# #T <- seq(283,284,1) # temperature range
-# # #kappa <-seq(0,1,0.1) # kappa range
+# T <- seq(285,290,0.3) # temperature range
+# kappa <- seq(0.6,1,0.04) # kappa range
 # Y <- 1 # feeding levels
-# 
+
 # Res_lam <- matrix(ncol = 3+1, nrow = length(kappa)*length(T)*length(Y)) # assuming 40 here from files
 # Res_v  <-  matrix(ncol = 3+n+1, nrow = length(kappa)*length(T)*length(Y)) # assuming 40 here from files
 # Res_w  <-  matrix(ncol = 3+n+1, nrow = length(kappa)*length(T)*length(Y)) # assuming 40 here from files
-# 
+
+# # Res_lam <- matrix(ncol = 3+1, nrow = length(ha_Ad)*length(T)*length(Y)) # assuming 40 here from files
+# # Res_v  <-  matrix(ncol = 3+n+1, nrow = length(ha_Ad)*length(T)*length(Y)) # assuming 40 here from files
+# # Res_w  <-  matrix(ncol = 3+n+1, nrow = length(ha_Ad)*length(T)*length(Y)) # assuming 40 here from files
+
 # parsK <- as.matrix(expand.grid(T,kappa,Y))
 # colnames(parsK) <- c("T","kappa","Y")
 # 
+# tic()
 # for (i in 1:nrow(parsK)){
-#    res <- wvlambda(K.matrix(parsK[i,]))
-#    Res_lam[i,] <- c(parsK[i,],res$lam) #c(T[d],kappa[e],Y[f], res$lambda)
-#    Res_v[i,]   <- c(parsK[i,],res$v) #REPRODUCTIVE VALUES
-#    Res_w[i,]   <- c(parsK[i,],res$w) #STABLE STRUCTURE
+#   res <- wvlambda.projection(K.matrix(parsK[i,]))
+#   Res_lam[i,] <- c(parsK[i,],res$lam) #c(T[d],kappa[e],Y[f], res$lambda)
+#   Res_v[i,]   <- c(parsK[i,],res$v) #REPRODUCTIVE VALUES
+#   Res_w[i,]   <- c(parsK[i,],res$w) #STABLE STRUCTURE
 #  }
+# toc()
 # 
 # colnames(Res_lam) <- c("T","kappa","Y","Lambda")
 # colnames(Res_v) <- c("T","kappa","Y","0",x)
 # colnames(Res_w) <- c("T","kappa","Y","0",x)
-# 
-# write.table(Res_lam, file="Res_lam0118_conRES_1.txt",quote=TRUE, sep=",", row.names=TRUE)
-# write.table(Res_v, file="Res_v0118_conRES_1.txt",quote=TRUE, sep=",", row.names=TRUE)
-# write.table(Res_w, file="Res_w0118_conRES_1.txt",quote=TRUE, sep=",", row.names=TRUE)
-# 
-# ### Contrast RESULT 2 - with temp x size interaction and size indep. kappa ####
-# 
-# cM  <-  0.017  # linear interaction between size and temp for Maintenance.
-# cId <- -0.02 # linear interaction effect (slope) between temp and mass for deactivation.
-# #Size indep. kappa requires resetting eps1 and 2:
-# eps1 <- 0.64   # Intake allometric scalar, free parameter to fit grwth in Windermere pike.
-# eps2 <- 0.55   # Intake allometric exponent, free parameter to fit grwth in Windermere pike.
-# kap_fun <- function(m, kappa=0.8, ha=6){kappa*m/m} # for size indep. kappa
-# 
-# T <- seq(280,292,0.25) # temperature range
-# kappa <-seq(0,1,0.025) # kappa range
-# #T <- seq(283,284,1) # temperature range
-# #kappa <-seq(0,1,0.1) # kappa range
-# Y <- 1 # feeding levels
-# 
-# Res_lam <- matrix(ncol = 3+1, nrow = length(kappa)*length(T)*length(Y)) # assuming 40 here from files
-# Res_v  <-  matrix(ncol = 3+n+1, nrow = length(kappa)*length(T)*length(Y)) # assuming 40 here from files
-# Res_w  <-  matrix(ncol = 3+n+1, nrow = length(kappa)*length(T)*length(Y)) # assuming 40 here from files
-# 
-# parsK <- as.matrix(expand.grid(T,kappa,Y))
-# colnames(parsK) <- c("T","kappa","Y")
-# 
-# for (i in 1:nrow(parsK)){
-#   res <- wvlambda(K.matrix(parsK[i,]))
-#   Res_lam[i,] <- c(parsK[i,],res$lam) #c(T[d],kappa[e],Y[f], res$lambda)
-#   Res_v[i,]   <- c(parsK[i,],res$v) #REPRODUCTIVE VALUES
-#   Res_w[i,]   <- c(parsK[i,],res$w) #STABLE STRUCTURE
-# }
-# 
-# colnames(Res_lam) <- c("T","kappa","Y","Lambda")
-# colnames(Res_v) <- c("T","kappa","Y","0",x)
-# colnames(Res_w) <- c("T","kappa","Y","0",x)
-# 
-# write.table(Res_lam, file="Res_lam0118_conRES_2.txt",quote=TRUE, sep=",", row.names=TRUE)
-# write.table(Res_v, file="Res_v0118_conRES_2.txt",quote=TRUE, sep=",", row.names=TRUE)
-# write.table(Res_w, file="Res_w0118_conRES_2.txt",quote=TRUE, sep=",", row.names=TRUE)
-# 
-# ### Contrast RESULT 3 - no temp x size interaction, size indep. kappa ####
-# 
-# cM <-  0 # linear interaction between size and temp for Maintenance.
-# cId <- 0 # linear interaction effect (slope) between temp and mass for deactivation.
-# #Size indep. kappa requires resetting eps1 and 2:
-# eps1 <- 0.64   # Intake allometric scalar, free parameter to fit grwth in Windermere pike.
-# eps2 <- 0.55   # Intake allometric exponent, free parameter to fit grwth in Windermere pike.
-# kap_fun <- function(m, kappa=0.8, ha=6){kappa*m/m} # for size indep. kappa
-# 
-# T <- seq(280,292,0.25) # temperature range
-# kappa <-seq(0,1,0.025) # kappa range
-# #T <- seq(283,284,1) # temperature range
-# #kappa <-seq(0,1,0.1) # kappa range
-# Y <- 1 # feeding levels
-# 
-# Res_lam <- matrix(ncol = 3+1, nrow = length(kappa)*length(T)*length(Y)) # assuming 40 here from files
-# Res_v  <-  matrix(ncol = 3+n+1, nrow = length(kappa)*length(T)*length(Y)) # assuming 40 here from files
-# Res_w  <-  matrix(ncol = 3+n+1, nrow = length(kappa)*length(T)*length(Y)) # assuming 40 here from files
-# 
-# parsK <- as.matrix(expand.grid(T,kappa,Y))
-# colnames(parsK) <- c("T","kappa","Y")
-# 
-# for (i in 1:nrow(parsK)){
-#   res <- wvlambda(K.matrix(parsK[i,]))
-#   Res_lam[i,] <- c(parsK[i,],res$lam) #c(T[d],kappa[e],Y[f], res$lambda)
-#   Res_v[i,]   <- c(parsK[i,],res$v) #REPRODUCTIVE VALUES
-#   Res_w[i,]   <- c(parsK[i,],res$w) #STABLE STRUCTURE
-# }
-# 
-# colnames(Res_lam) <- c("T","kappa","Y","Lambda")
-# colnames(Res_v) <- c("T","kappa","Y","0",x)
-# colnames(Res_w) <- c("T","kappa","Y","0",x)
-# 
-# write.table(Res_lam, file = "Res_lam0118_conRES_3.txt",quote=TRUE, sep=",", row.names=TRUE)
-# write.table(Res_v, file = "Res_v0118_conRES_3.txt",quote=TRUE, sep=",", row.names=TRUE)
-# write.table(Res_w, file = "Res_w0118_conRES_3.txt",quote=TRUE, sep=",", row.names=TRUE)
+
+# write.table(Res_lam, file="Res_lam0316_baseline_Onlyyellow_n500.txt",quote=TRUE, sep=",", row.names=TRUE)
+# write.table(Res_v, file="Res_v0316__baseline_Onlyyellow_n500.txt",quote=TRUE, sep=",", row.names=TRUE)
+# write.table(Res_w, file="Res_w0316__baseline_Onlyyellow_n500.txt",quote=TRUE, sep=",", row.names=TRUE)
 
 
-## Sensitivity analyses based on Merow et al. 2014 appendix (section 1.4.5)
-#"The eigen-things can be combined to obtain the sensitivity and elasticity matrices."
-# v.dot.w=sum(stable.dist*repro.val)*h
-# sens=outer(repro.val,stable.dist)/v.dot.w
-# elas=matrix(as.vector(sens)*as.vector(K)/lam,nrow=n)
+# THERMAL or kappa SENSITIVITY OF LAMBDA ####
+# Sensitivity analysis to study how change in Lambda can be
+# attributed to change in different vital rates originating from 
+# a change in kappa or temperature.
+# The partial derivative of the output Y with respect to an input factor Xi
+
+# Sensitivity based on Vindenes 2014:
+
+dG.dm <- function(m, Pars){
+  (DEBgrowthfun(m+0.1, Pars) - DEBgrowthfun(m, Pars))/0.1
+}
+
+#Sensitivity of the growth density function to temperature (approximate) 
+
+dG.dT <- function(m, Pars){
+  (DEBgrowthfun(m, c(T=Pars[["T"]]+0.001, 
+                     kappa =Pars[["kappa"]], 
+                     Y = Pars[["Y"]])) 
+   - DEBgrowthfun(m, Pars))/0.001
+}
+
+##SURVIVAL SENSITIVITY
+#Sensitivity of the survival probability function to temperature (approximate) 
+
+dS.dT <- function(m, Pars){
+  (DEBsurvfun(m, c(T=Pars[["T"]]+0.001, 
+                   kappa =Pars[["kappa"]], 
+                   Y = Pars[["Y"]])) 
+   - DEBsurvfun(m, Pars))/0.001
+}
+
+#Sensitivity of the survival probability function to length (approximate) 
+ 
+dS.dm <- function(m, Pars){
+  (DEBsurvfun(m+0.1, Pars) - DEBsurvfun(m, Pars))/0.1
+}
+
+# OFFSPRING SIZE SENSITIVITY
+#Sensitivity of the offspring length density function to temperature (approximate)
+
+dO.dT <- function(Pars){
+  (DEBoff.size(c(T=Pars[["T"]]+0.001, 
+                 kappa =Pars[["kappa"]], 
+                 Y = Pars[["Y"]]))
+   - (DEBoff.size(Pars)))/0.001
+}
+
+# Sensitivity of the fecundity function to length (approximate) 
+ 
+dR.dm <- function(m, Pars){
+  (DEBrepfun(m+0.1, Pars) - DEBsurvfun(m, Pars))/0.1
+}
+
+# Sensitivity of the fecundity function to temperature (approximate) 
+
+dR.dT <- function(m, Pars){
+  (DEBrepfun(m, c(T=Pars[["T"]]+0.001, 
+                  kappa =Pars[["kappa"]], 
+                  Y = Pars[["Y"]])) 
+   - DEBrepfun(m, Pars))/0.001
+}
+
+# Vindenes etal 2014 code
+thermal.sensitivity <- function(Pars){
+  res <- wvlambda.projection(Kmat = K.matrix(Pars))
+  Fmat <- Smat <- Omat <- Gmat <- matrix(NA, n+1, n+1)
+  sx <- c(DEBsurvfun(e_m, Pars),DEBsurvfun(x, Pars))
+  dsx <- dS.dT(c(e_m,x), Pars)
+  fx <- c(DEBrepfun(0, Pars), DEBrepfun(x, Pars))
+  dfx <- dR.dT(c(0,x), Pars)
+  offs <- c(0,DEBoff.size(Pars))
+  doff <- c(0,dO.dT(Pars))
+  gx <- dgx <- matrix(0,n+1,n+1)
+  gx[2:(n+1),2:(n+1)] <- DEBgrowthfun(x, Pars) # unlike vindenens 2014, the DEBgrowthfun returns all y-distributions
+  for(j in 2:(n+1)){
+    dgx[2:(n+1),j] <- dG.dT(x[j-1], Pars)
+  }
+  gx[,n+1] <- gx[,n]
+  dgx[,n+1] <- dgx[,n]
+  for(i in 1:(n+1)){			
+    Fmat[i,] <- res$v[i]*res$w*(dfx*sx[i])*dx
+    Omat[i,] <- res$v[i]*res$w*(doff[i]*el_surv)*dx
+    Smat[i,] <- res$v[i]*res$w*(dsx*gx[i,])*dx
+    Gmat[i,] <- res$v[i]*res$w*(dgx[i,]*sx[i])*dx
+  }
+  list("Fecundity contribution"= apply(Fmat,2,sum),"Survival contribution"=apply(Smat,2,sum),"Growth contribution"= apply(Gmat,2,sum),"Offspring length contribution"= apply(Omat,2,sum),"Total contribution"=apply(Fmat,2,sum)+apply(Smat,2,sum)+apply(Gmat,2,sum)+apply(Omat,2,sum))
+}	
+ 
+# Tsensit <-thermal.sensitivity(GR_pars)
+# # 1=fec sens, 2=surv sens, 3=growth sens, 4=offs sens,
+# 
+# par(mfrow=c(2,2), las=1, bty="l")
+# plot(c(0,x), Tsensit[[1]], type="l", ylab="", ylim=c(-1e1,1e5),main=expression(paste("Fecudity contributions to d",  lambda, "/dT")), col=1, lwd=2, xlab="x")
+# plot(c(0,x), Tsensit[[2]], type="l", ylab="", ylim=c(-1e-5,1e-5), main=expression(paste("Survival contributions to d",  lambda, "/dT")), col=2, lwd=2, xlab="Size x")
+# plot(c(0,x), Tsensit[[3]], type="l", ylab="", ylim=c(-1e-6,1e-5),main=expression(paste("Growth Contributions to d",  lambda, "/dT")), col=3, lwd=2, xlab="Size x")
+# plot(c(0,x), Tsensit[[4]], type="l", ylab="", ylim=c(0,1e-9),main=expression(paste("Offspring size contributions to d",  lambda,"/dT")), col=2, lwd=2, xlab="Size x")
+# #plot(c(0,x), Tsensit[[5]], type="l", ylab="", ylim=c(0,1e-9),main=expression(paste("Contributions to d",  lambda, "/d",mu[z])), col=2, lwd=2, xlab="Size x")
+
+Size.sensitivity <- function(Pars){
+  res <- wvlambda.projection(Kmat = K.matrix(Pars))
+  Fmat <- Smat <- Gmat <- matrix(NA, n+1, n+1)
+  sx <- c(DEBsurvfun(e_m, Pars),DEBsurvfun(x, Pars))
+  dsx <- dS.dm(c(e_m,x), Pars)
+  fx <- c(DEBrepfun(0, Pars), DEBrepfun(x, Pars))
+  dfx <- dR.dm(c(0,x), Pars)
+  gx <- dgx <- matrix(0,n+1,n+1)
+  gx[2:(n+1),2:(n+1)] <- DEBgrowthfun(x, Pars) # unlike vindenens 2014, the DEBgrowthfun returns all y-distributions
+  for(j in 2:(n+1)){
+    dgx[2:(n+1),j] <- dG.dm(x[j-1], Pars)
+  }
+  gx[,n+1] <- gx[,n]
+  dgx[,n+1] <- dgx[,n]
+  for(i in 1:(n+1)){			
+    Fmat[i,] <- res$v[i]*res$w*(dfx*sx[i])*dx
+    Smat[i,] <- res$v[i]*res$w*(dsx*gx[i,])*dx
+    Gmat[i,] <- res$v[i]*res$w*(dgx[i,]*sx[i])*dx
+  }
+  list("Fecundity contribution"= apply(Fmat,2,sum),"Survival contribution"=apply(Smat,2,sum),"Growth contribution"= apply(Gmat,2,sum),"Total contribution"=apply(Fmat,2,sum)+apply(Smat,2,sum)+apply(Gmat,2,sum))
+}	
+
+# Ssensit <- Size.sensitivity(GR_pars)
+# # 1=fec sens, 2=surv sens, 3=growth sens,4 = total
+# 
+# par(mfrow=c(2,2), las=1, bty="l")
+# plot(c(0,x), Ssensit[[1]], type="l", ylab="", ylim=c(-1e1,1e7),main=expression(paste("Fecudity contributions to d",  lambda, "/dT")), col=1, lwd=2, xlab="x")
+# plot(c(0,x), Ssensit[[2]], type="l", ylab="", ylim=c(-1e-8,1e-7), main=expression(paste("Survival contributions to d",  lambda, "/dT")), col=2, lwd=2, xlab="Size x")
+# plot(c(0,x), Ssensit[[3]], type="l", ylab="", ylim=c(0,1e-8),main=expression(paste("Growth Contributions to d",  lambda, "/dT")), col=3, lwd=2, xlab="Size x")
+
