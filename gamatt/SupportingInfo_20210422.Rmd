@@ -1,0 +1,426 @@
+---
+title: "Thunell DEBIPM Supporting info"
+author: "Viktor Thunell"
+date: '2021-03-18'
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Supporting information for DEB IPM (for communication with coauthors)
+
+### A1. Effects of size and temperature on maintenance, consumption and energy budget 
+
+#### Effects of temperature on maintenance and consumption 
+
+The quantitative effect of using a negative interaction term for consumption deactivation (cId) is the same as for using a positive interaction term for consumption activation (cIa). I find the effect of activation (slope) for intake over size is more intuitive than decreasing deactivation and thus easier for communication purposes. I will therefore switch from using cId to using cIa.
+
+I have incorrectly used the estimate of cM in Arrhenius temperature (1/kT) from Lindmark et al. 2021 (0.018). The correct value should represent the decrease in the mass scaling exponent of cM, this value is 0.0026 which is small compared to 0.018. This requires new values for cIa.
+
+I intend to reparamterize the model 
+```{r, echo = FALSE, warning = FALSE}
+cM=0.0026
+cIa=0
+cId=0.01
+c2 <- cbind(cId,Mass=1,Consumption = rI_T_GU2(280:299, 10), 
+            Maintenance = rM_T_AL2(280:299, 10)) 
+c2 <- rbind(c2,cbind(cId,10,Consumption = rI_T_GU2(280:299, 100),
+                     Maintenance = rM_T_AL2(280:299, 100)))
+c2 <- rbind(c2,cbind(cId,100,Consumption = rI_T_GU2(280:299, 1000),
+                     Maintenance = rM_T_AL2(280:299, 1000)))
+cId=0
+c1 <- cbind(cId,Mass=1,Consumption = rI_T_GU2(280:299, 10), 
+            Maintenance = rM_T_AL2(280:299, 10)) 
+c1 <- rbind(c1,cbind(cId,10,Consumption = rI_T_GU2(280:299, 100),
+                     Maintenance = rM_T_AL2(280:299, 100)))
+c1 <- rbind(c1,cbind(cId,100,Consumption = rI_T_GU2(280:299, 1000),
+                     Maintenance = rM_T_AL2(280:299, 1000)))
+cId=-0.01
+c0 <- cbind(cId,Mass=1,Consumption = rI_T_GU2(280:299, 10), 
+            Maintenance = rM_T_AL2(280:299, 10)) 
+c0 <- rbind(c0,cbind(cId,10,Consumption = rI_T_GU2(280:299, 100),
+                     Maintenance = rM_T_AL2(280:299, 100)))
+c0 <- rbind(c0,cbind(cId,100,Consumption = rI_T_GU2(280:299, 1000),
+                     Maintenance = rM_T_AL2(280:299, 1000)))
+
+
+A1_d1<- cbind(Temp = rep(275:299,9), rbind(c2,c1,c0))
+A1_d1_long <- pivot_longer(as.tibble(A1_d1), 4:5, names_to = "Rate", 
+                           values_to = "value")
+
+cM=0.0026
+cId = 0
+cIa=-0.01
+c2 <- cbind(cIa,Mass=1,Consumption = rI_T_GU2(280:299, 10), 
+            Maintenance = rM_T_AL2(280:299, 10)) 
+c2 <- rbind(c2,cbind(cIa,10,Consumption = rI_T_GU2(280:299, 100),
+                     Maintenance = rM_T_AL2(280:299, 100)))
+c2 <- rbind(c2,cbind(cIa,100,Consumption = rI_T_GU2(280:299, 1000),
+                     Maintenance = rM_T_AL2(280:299, 1000)))
+cIa=0
+c1 <- cbind(cIa,Mass=1,Consumption = rI_T_GU2(280:299, 10), 
+            Maintenance = rM_T_AL2(280:299, 10)) 
+c1 <- rbind(c1,cbind(cIa,10,Consumption = rI_T_GU2(280:299, 100),
+                     Maintenance = rM_T_AL2(280:299, 100)))
+c1 <- rbind(c1,cbind(cIa,100,Consumption = rI_T_GU2(280:299, 1000),
+                     Maintenance = rM_T_AL2(280:299, 1000)))
+cIa=0.01
+c0 <- cbind(cIa,Mass=1,Consumption = rI_T_GU2(280:299, 10), 
+            Maintenance = rM_T_AL2(280:299, 10)) 
+c0 <- rbind(c0,cbind(cIa,10,Consumption = rI_T_GU2(280:299, 100),
+                     Maintenance = rM_T_AL2(280:299, 100)))
+c0 <- rbind(c0,cbind(cIa,100,Consumption = rI_T_GU2(280:299, 1000),
+                     Maintenance = rM_T_AL2(280:299, 1000)))
+
+
+A1_d2<- cbind(Temp = rep(280:299,9), rbind(c2,c1,c0))
+A1_d2_long <- pivot_longer(as.tibble(A1_d2), 4:5, names_to = "Rate", 
+                           values_to = "value")
+#A1_d1_long["msRate"] <- A1_d1_long$value/A1_d1_long$Mass
+```
+
+```{r, echo = FALSE, warning = FALSE, figures-side, fig.show="hold", out.width="50%"}
+ggplot(A1_d1_long, aes(Temp, value, color = Rate, linetype = as.factor(Mass))) +
+  geom_line(size=0.75) +
+  facet_wrap(~cId, labeller = label_both) +# ,scales = "free_y") +
+  theme_bw() +
+  scale_colour_brewer(palette="Dark2")  +
+  ylab("Temerature effect") +
+  scale_x_continuous("Temperature [K]", limits= c(280:299), breaks = c(280,284,288,292,296,300)) +
+  ggtitle(expression(paste(italic("T")["0"]," = 283 Kelvin"))) +
+  coord_cartesian(ylim = c(0,3)) +
+  theme_bw() +
+  theme(strip.background = element_rect(fill = "transparent", colour =  "transparent"),)
+
+ggplot(A1_d2_long, aes(x=Temp, y = value, color = Rate, linetype = as.factor(Mass))) +
+  geom_line(size=0.75) +
+  facet_wrap(~cIa, labeller = label_both) +# ,scales = "free_y") +
+  theme_bw() +
+  scale_colour_brewer(palette="Dark2")  +
+  ylab("Temerature effect") +
+  coord_cartesian(ylim = c(0,2.5)) +
+  scale_x_continuous("Temperature [K]", limits= c(280,299), breaks = c(280,284,288,292,296,300)) +
+  ggtitle(expression(paste(italic("T")["0"]," = 292 Kelvin"))) +
+  theme_bw() +
+  theme(strip.background = element_rect(fill = "transparent", colour =  "transparent"),)
+```
+
+For a cId < 0, the effect of temperature on consumption deactivation will increase with increasing mass, meaning that for large individuals, the deactivation slope will be less negative than for small individuals. This moves the temperature optimum for consumption to higher temperatures.
+
+For a cIa > 0, the effect of temperature on consumption (activation) will increase with increasing mass.  
+
+
+#### Effects of temperature on size dependent energy budget
+
+A decrease in the interaction parameter for temperature deactivation over size, the slope between temperature and mass for consumption deactivation. 
+
+For a cId < 0, the effect of temperature on consumption deactivation will decrease with increasing mass, meaning that for large individuals, the deactivation slope will be less negative than for small individuals. This moves the temperature optimum for consumption to higher temperatures. 
+
+```{r, echo = FALSE, warning = FALSE}
+cId <- 0
+#cM <- 0.0026
+Temp <- seq(285, 298, 0.2)
+GR_pars <- c(T = 287, 
+             kappa = 0.93, 
+             Y = 1)
+
+T_rates2 <- NULL
+#cIa <- -0.01
+for(i in Temp) {
+  maint <- rho1*(x^rho2)*rM_T_AL2(i, x)
+  intake  <- eps1*(x^eps2)*rI_T_GU2(i, x) 
+  T_rates2 <- 
+    rbind(T_rates2,cbind(Temp = i, mass = x, cIa = cIa,
+                         maint, intake, 
+                         growth_E = kap_fun(x,GR_pars["kappa"])*alpha*GR_pars["Y"]*intake - maint,
+                         repro_E = alpha* GR_pars["Y"]*(1-kap_fun(x,GR_pars["kappa"]))*intake))
+  }
+
+# T_rates1 <- NULL
+# cIa <- 0
+# for(i in Temp) {
+#   maint <- rho1*(x^rho2)*rM_T_AL2(i, x)
+#   intake  <- eps1*(x^eps2)*rI_T_GU2(i, x) 
+#   T_rates1 <- rbind(T_rates1,
+#                    cbind(Temp = i, mass = x, cIa = cIa,
+#                          maint, intake, 
+#                          growth_E = kap_fun(x,GR_pars["kappa"])*
+#                            alpha*GR_pars["Y"]*intake - maint, 
+#                          repro_E = alpha*
+# GR_pars["Y"]*(1-kap_fun(x,GR_pars["kappa"]))*intake))
+#    }
+# 
+# T_rates0 <- NULL
+# cIa <- 0.01
+# for(i in Temp) {
+#   maint <- rho1*(x^rho2)*rM_T_AL2(i, x)
+#   intake  <- eps1*(x^eps2)*rI_T_GU2(i, x) 
+#   T_rates0 <- rbind(T_rates0,
+#                    cbind(Temp = i, mass = x, cIa = cIa,
+#                          maint, intake, 
+#                          growth_E = kap_fun(x,GR_pars["kappa"])*
+#                            alpha*GR_pars["Y"]*intake - maint, 
+#                          repro_E = alpha*
+# GR_pars["Y"]*(1-kap_fun(x,GR_pars["kappa"]))*intake))
+#    }
+
+T_rates <- T_rates2#rbind(T_rates2, T_rates1, T_rates0)
+maxgT<- as.data.frame(T_rates) %>% 
+        group_by(mass) %>%
+        slice_max(0.35*(intake-maint))
+plot(maxgT$mass,maxgT$Temp,type="l")
+
+T_rates_long <- pivot_longer(as.tibble(T_rates), 6:7, names_to = "E_type", values_to = "g_day")
+T_rates_long["g_g_day"] <- T_rates_long$g_day/T_rates_long$mass
+
+
+T_rates_long %>%
+  filter(as.factor(mass) %in% c(T_rates_long$mass[c(5,50,100,400)])) %>%
+  ggplot(.) +
+    geom_line(size=1 , aes(Temp, g_day, color = as.factor(mass), 
+                         linetype = as.factor(E_type))) +
+    facet_wrap(~cIa, labeller = label_both) +
+    ylab("Energy budget, g/day") +
+    ylim(0,NA)+
+    #ylim(0,0.012) + #ylim(0,NA) +
+    theme_bw() +
+    scale_colour_brewer(palette="Dark2")
+
+```
+
+```{r, echo = FALSE, warning = FALSE}
+T_rates_long %>%
+  filter(as.factor(Temp) %in% c(287,288,289)) %>%
+  ggplot(.) +
+    geom_line(size=1 , aes(mass, g_g_day, color = as.factor(Temp), 
+                         linetype = as.factor(E_type))) +
+    #facet_wrap(~cIa, labeller = label_both) +
+    ylim(0,0.01) + #ylim(0,NA) +
+    theme_bw() +
+    ylab("Energy budget, g_g/day") +
+    scale_colour_brewer(palette="Dark2")
+
+```
+Wit h an increasing cIa (or decreasing cId), the mass specific energy budget increases with temperature, enabling growth to larger sizes.
+
+
+```{r, echo = FALSE, warning = FALSE}
+T_rates_long %>%
+  filter(as.factor(mass) %in% c(T_rates_long$mass[c(5,50,100,200)])) %>%
+  ggplot(.) +
+    geom_line(size=1 , aes(Temp, g_g_day, color = as.factor(mass), 
+                         linetype = as.factor(E_type))) +
+    #facet_wrap(~cIa, labeller = label_both) +
+    ylab("Energy budget, g/g/day") +
+    #ylim(0,0.012) + #ylim(0,NA) +
+    theme_bw() +
+    scale_colour_brewer(palette="Dark2")
+
+```
+The mass specific temperature optimum for growth, i.e. the temperature at which the energy budget per unit mass is maximized, increases with cIa for both larger and small individuals. The effects is however stronger for larger individuals. 
+
+
+### Interaction on maintetance instead of intake
+
+```{r, echo = FALSE, warning = FALSE}
+cIa<-0
+cId<-0
+Temp <- seq(280, 294, 0.2)
+GR_pars <- c(T = 283, 
+             kappa = 0.8, 
+             Y = 1)
+
+T_rates2 <- NULL
+cM = 0.012
+for(i in Temp) {
+  maint <- rho1*(x^rho2)*rM_T_AL2(i, x)
+  intake  <- eps1*(x^eps2)*rI_T_GU2(i, x) 
+  T_rates2 <- rbind(T_rates2,
+                   cbind(Temp = i, mass = x, cM = cM,
+                         maint, intake, 
+                         growth_E = kap_fun(x,GR_pars["kappa"])*
+                           alpha*Y*intake - maint, 
+                         repro_E = alpha*
+                           Y*(1-kap_fun(x,GR_pars["kappa"]))*intake))
+   }
+
+T_rates1 <- NULL
+cM = 0.0026
+for(i in Temp) {
+  maint <- rho1*(x^rho2)*rM_T_AL2(i, x)
+  intake  <- eps1*(x^eps2)*rI_T_GU2(i, x) 
+  T_rates1 <- rbind(T_rates1,
+                   cbind(Temp = i, mass = x, cM = cM,
+                         maint, intake, 
+                         growth_E = kap_fun(x,GR_pars["kappa"])*
+                           alpha*Y*intake - maint, 
+                         repro_E = alpha*
+                           Y*(1-kap_fun(x,GR_pars["kappa"]))*intake))
+   }
+
+T_rates0 <- NULL
+cM = 0.02
+for(i in Temp) {
+  maint <- rho1*(x^rho2)*rM_T_AL2(i, x)
+  intake  <- eps1*(x^eps2)*rI_T_GU2(i, x) 
+  T_rates0 <- rbind(T_rates0,
+                   cbind(Temp = i, mass = x, cM = cM,
+                         maint, intake, 
+                         growth_E = kap_fun(x,GR_pars["kappa"])*
+                           alpha*Y*intake - maint, 
+                         repro_E = alpha*
+                           Y*(1-kap_fun(x,GR_pars["kappa"]))*intake))
+   }
+
+T_rates <- rbind(T_rates2, T_rates1, T_rates0)
+T_rates_long <- pivot_longer(as.tibble(T_rates), 6:7, names_to = "E_type", values_to = "g_day")
+T_rates_long["g_g_day"] <- T_rates_long$g_day/T_rates_long$mass
+
+T_rates_long %>%
+  filter(as.factor(Temp) %in% c(283,284,285)) %>%
+  ggplot(.) +
+    geom_line(size=1 , aes(mass, g_g_day, color = as.factor(Temp), 
+                         linetype = as.factor(E_type))) +
+    facet_wrap(~cM, labeller = label_both) +
+    ylim(0,0.012) + #ylim(0,NA) +
+    theme_bw() +
+    scale_colour_brewer(palette="Dark2")
+
+```
+
+
+```{r, echo = FALSE, warning = FALSE}
+T_rates_long %>%
+  filter(near(mass, c(16000/n,10*16000/n,20*16000/n), tol = 5)) %>%
+  ggplot(.) +
+    geom_line(size=1 , aes(Temp, g_day, color = as.factor(mass), 
+                         linetype = as.factor(E_type))) +
+    facet_wrap(~cM, labeller = label_both) +
+    ylab("Energy budget, g/day") +
+    ylim(-1,NA) +
+    theme_bw() +
+    scale_colour_brewer(palette="Dark2")
+
+```
+
+### Temperature dependent Growth curves
+
+1 - Effect of cIa, . 
+```{r, echo = FALSE, warning = FALSE}
+kappp <-0.93
+Temp <- seq(283,295,2)
+t <- 18
+traj <- NULL
+#cIas <- 0#c(0,0.006,0.01)
+
+# for(o in cIas){
+   #cIa = o
+for(i in Temp){
+  trajT <- as.data.frame(cbind(ProjCoh(c(T = i, kappa = kappp, Y = 1), t, I_pop=c(1000000,rep(0,n))),rep(c(0,round(x)),t),i,0))
+  colnames(trajT) <- c("abund","t","mass","Temp","cIa")
+  trajT <- 
+    trajT %>% 
+    group_by(t) %>%
+     slice(which.max(abund)) 
+  traj <- rbind(traj, trajT)
+} 
+#}
+
+trajcIa <- traj
+  
+gro <- ggplot(trajcIa) +
+  geom_point(data=GData, aes(Age, ltow_AYV(Length)), alpha=0.1) +
+  geom_line(data=trajcIa,size=1 , aes(t, mass, color = as.factor(Temp))) +
+  #facet_wrap(~cIa) +#, labeller = label_both) +
+  # ylim(0,0.012) + #ylim(0,NA) +
+  # xlim(0,5) + #ylim(0,NA) +
+  ylab("Weight [g]") +
+  theme_bw() + 
+   scale_colour_brewer(palette="Dark2",name = "Temp [K]")+
+  theme(legend.position="none") 
+
+xr<-sort(sample(x, 100, replace = FALSE))
+rep<-NULL
+for(i in Temp){
+  repPh <- 
+    as.tibble(cbind(xr,DEBrepfun(xr, c(T = i, kappa = kappp, 
+                                       Y = 1)),i))
+  colnames(repPh) <- c("mass","fec","Temp")
+  rep <- rbind(rep, repPh)
+}
+x
+repp <- ggplot() +
+  geom_point(data=FData, aes(Weight, Eggs), alpha=0.1) +
+  geom_line(data=rep, size=1, aes(mass, fec, color = as.factor(Temp))) +
+  geom_smooth(data=FData, aes(Weight, Eggs),method=lm, lwd=0.5, linetype="dashed")+  
+  scale_colour_brewer(palette="Dark2") +
+  theme_bw()
+
+
+gro + repp
+```
+
+```{r, echo = FALSE, warning = FALSE}
+Temp = seq(280,287,1)
+t <- 20
+traj <- NULL
+cM <- 0.0026
+cId <- 0
+cIa <- 0.001
+for(i in Temp){
+  trajT <- as.data.frame(cbind(ProjCoh(c(T = i, kappa = 0.8, Y = 1),t, I_pop=c(1000000,rep(0,n))),rep(c(0,round(x)),t),i))
+  colnames(trajT) <- c("abund","t","mass","Temp")
+  trajT <- 
+    trajT %>% 
+    group_by(t) %>%
+     slice(which.max(abund)) 
+  traj <- rbind(traj, trajT)
+}
+trajcId <- traj
+trajcId["c"] <- "cId"
+
+cIa <- 0.003
+for(i in Temp){
+  trajT <- as.data.frame(cbind(ProjCoh(c(T = i, kappa = 0.8, Y = 1),t, I_pop=c(1000000,rep(0,n))),rep(c(0,round(x)),t),i))
+  colnames(trajT) <- c("abund","t","mass","Temp")
+  trajT <- 
+    trajT %>% 
+    group_by(t) %>%
+     slice(which.max(abund)) 
+  traj <- rbind(traj, trajT)
+}
+trajcIa <- traj
+trajcIa["c"] <- "cIa"
+
+cM <- 0.005
+eps1 <- 0.49 #614 #54 #64 # Intake allometric scalar, free parameter to fit 
+eps2 <- 0.59 #55 #58 # Intake allometric exponent, free parameter to fit grwth in Windermere pike.
+
+traj <- NULL
+for(i in Temp){
+  trajT <- as.data.frame(cbind(ProjCoh(c(T = i, kappa = 0.8, Y = 1),t, I_pop=c(1000000,rep(0,n))),rep(c(0,round(x)),t),i))
+  colnames(trajT) <- c("abund","t","mass","Temp")
+  trajT <- 
+    trajT %>% 
+    group_by(t) %>%
+     slice(which.max(abund)) 
+  traj <- rbind(traj, trajT)
+}
+trajcM <- traj
+trajcM["c"] <- "cM"
+
+#trajc <- rbind(trajcIa,trajcId,trajcM)
+ggplot(trajcM) +
+geom_line(size=1 , aes(t, mass, color = as.factor(Temp))) +
+    geom_point(data=GData, aes(Age, ltow_AYV(Length)), alpha=0.1) +
+    facet_wrap(~c, labeller = label_both) +
+    #ylim(0,0.012) + #ylim(0,NA) +
+    #xlim(0,5) + #ylim(0,NA) +
+    theme_bw() + 
+    scale_colour_brewer(palette="Dark2")
+```
+
+Topt ~ size for 3 cIa values.
+
