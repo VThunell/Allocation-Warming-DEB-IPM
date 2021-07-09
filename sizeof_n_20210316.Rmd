@@ -1,0 +1,315 @@
+---
+title: "Effects of the size of $n$ 20210316"
+author: "Viktor Thunell"
+date: '2021-03-16'
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## 1 - Does the "spikey" shape of the probability density of $y$ depend on $n$ (number of bins)?
+
+Yes...
+
+```{r}
+mmin <- 1     # min weight
+mmax <- 18000 # max weight
+n <- 100    # row/col number of the discretization-matrix of the continuos rates
+x <- seq(mmin,mmax, length=n)
+dx <- x[2] - x[1] # step size (grams) in the continuos size spectra
+```
+
+```{r, echo=FALSE}
+plot(x,  DEBgrowthfun(14000, y=x, GR_pars)*dx, type="l", ylab="DEBgrowth(y;x)", 
+     xlab="y", main = "Prob. density of DEBgrowth(x,y), n=100")
+lines(x, DEBgrowthfun(10000, y=x, GR_pars)*dx, lty=2)
+
+lines(x, DEBgrowthfun(1000, y=x, GR_pars)*dx, lty=3)
+lines(x, DEBgrowthfun(100, y=x, GR_pars)*dx, lty=4) # values >~8100 are highly unlikley to grow into as y=x??
+legend("topleft", c("14000","10000","1000","100"), lty=c(1,2,3,4), cex = 0.7, title="mass [g]")
+```
+
+```{r}
+mmin <- 1     # min weight
+mmax <- 16000 # max weight
+n <- 500    # row/col number of the discretization-matrix of the continuos rates
+x <- seq(mmin,mmax, length=n)
+dx <- x[2] - x[1] # step size (grams) in the continuos size spectra
+```
+
+```{r, echo=FALSE}
+plot(x,  DEBgrowthfun(14000, y=x, GR_pars)*dx, type="l", ylab="DEBgrowth(y;x)", 
+     xlab="y", main = "Prob. density of DEBgrowth(x,y), n=500")
+lines(x, DEBgrowthfun(10000, y=x, GR_pars)*dx, lty=2)
+
+lines(x, DEBgrowthfun(1000, y=x, GR_pars)*dx, lty=3)
+lines(x, DEBgrowthfun(100, y=x, GR_pars)*dx, lty=4) # values >~8100 are highly unlikley to grow into as y=x??
+legend("topleft", c("14000","10000","1000","100"), lty=c(1,2,3,4), cex = 0.7, title="mass [g]")
+```
+
+## 2 - Does the number of $n$ affect $\lambda$ ?
+
+Yes it does, lmbda decreases with n, and this is good because then $el_{surv} = 0.00019$ turns out to be quite good! $/lambda$ seem to converge at high $n$. Is a higher n always better?
+
+```{r}
+mmin <- 1     # min weight
+mmax <- 18000 # max weight
+n <- 100    # row/col number of the discretization-matrix of the continuos rates
+x <- seq(mmin,mmax, length=n)
+dx <- x[2] - x[1] # step size (grams) in the continuos size spectra
+
+wvlambda.projection(K.matrix(GR_pars <- c(T = 283, kappa = 0.8, Y = 1) ))[1]
+
+```
+
+```{r}
+mmin <- 1     # min weight
+mmax <- 16000 # max weight
+n <- 500    # row/col number of the discretization-matrix of the continuos rates
+x <- seq(mmin,mmax, length=n)
+dx <- x[2] - x[1] # step size (grams) in the continuos size spectra
+
+wvlambda.projection(K.matrix(GR_pars <- c(T = 283, kappa = 0.8, Y = 1) ))[1]
+```
+
+```{r}
+mmin <- 1     # min weight
+mmax <- 16000 # max weight
+n <- 1000    # row/col number of the discretization-matrix of the continuos rates
+x <- seq(mmin,mmax, length=n)
+dx <- x[2] - x[1] # step size (grams) in the continuos size spectra
+
+wvlambda.projection(K.matrix(GR_pars <- c(T = 283, kappa = 0.8, Y = 1) ))[1]
+
+```
+```{r}
+ns <- rev(seq(400,2500,100))
+nlam=data.frame()
+nwlam=list()
+nvlam=list()
+for(i in ns){
+    n <- i
+    x <- seq(mmin,mmax, length=n)
+    dx <- x[2] - x[1] # step size (grams) in the continuos size 
+    lam <- wvlambda.projection_WOeggs(K.matrix(GR_pars <- c(T = 287,                                           kappa = 0.83, Y = 1) ))
+    nlam <- rbind(nlam,c(i,lam[[1]]))
+    nwlam <- c(nwlam,c(cbind(i,x,lam[[2]])))
+    nvlam <- c(nvlam,c(cbind(i,x,lam[[3]])))
+    
+    }
+colnames(nlam) <- c("n","lambda")
+colnames(nlam) <- c("n",x)
+#write.table(nlam, file="nlam_Robustscaling_20210326.txt",quote=TRUE, sep=",", row.names=TRUE)
+```
+
+```{r}
+nlam
+#nlam <- read.delim("nlam0316_LindmarkScaling.txt", sep = ",")
+plot(nlam$n,nlam$lam, type="l", main = "Effect of bin number (n) on lambda")
+plot(nwlam$n,nlam$lam, type="l", main = "Effect of bin number (n) on lambda")
+```
+
+The bin number should be set so that it doesnt effect $\lambda$,  $n = 1000$ seems like a suitable choice.
+
+## 3 - How does $n$ affect the overall results?
+
+Quite alot actually. As increasing $n$ decreases $\lambda$, we remove alot of the Kappa-temperature surface that gives viable populations. And qualitatively, we get no effect of temperature on allocation strategies. 
+
+I'm considering changing some assumptions on size-temperature scaling of consumption and maintenance which may matter for my results but I need to resolve this first (choose a suitable $n$) as this matters alot. 
+
+### Results with $n=100$
+
+```{r, include=FALSE}
+mmin <- 1     # min weight
+mmax <- 16000 # max weight
+n <- 100    # row/col number of the discretization-matrix of the continuos rates
+x <- seq(mmin,mmax, length=n)
+dx <- x[2] - x[1] # step size (grams) in the continuos size 
+
+Res_lam <- read.delim("Res_lam0316_Baseline_n100.txt", sep = ",")
+Res_v <- read.delim("Res_v0316_Baseline_n100.txt", sep = ",")
+Res_w <- read.delim("Res_w0316_Baseline_n100.txt", sep = ",")
+
+a <- as.tibble(Res_lam) %>%
+  filter(T %in% c(277, 279, 281, 283, 285, 287, 289)) %>%
+  ggplot(., aes(kappa, Lambda, color = as.factor(T))) +
+  geom_line(size=0.5) +
+  ylab(expression(lambda~(Fitness))) +
+  xlab(expression(kappa~(Growth~Allocation))) +
+  labs(color = "Temp [K]") +
+  theme_bw()
+
+### PLOT A SURFACE OF FITNESS OVER TEMP (x) AND KAPPA (y)
+maxl<- as.data.frame(Res_lam) %>% 
+        group_by(T) %>%
+        slice_max(Lambda)
+
+b <- ggplot(as_tibble(Res_lam), aes(T,kappa)) +
+  geom_raster(aes(fill=round(Lambda, 4))) + #, interpolate = TRUE)   geom_smooth(data=maxl ,aes(T,kappa), size=1, se=FALSE) +
+  geom_point(data=maxl ,aes(T,kappa),size=0.1) +
+  #geom_point(data=maxl, aes(x=which(T == max(Lambda)),y=which(Kappa == max(Lambda)),colour="blue")) +
+  scale_fill_gradientn(
+     colours = c("black","white","yellow","red"),
+     values = rescale(c(0,0.9999,1, round(max(as.data.frame(Res_lam[,'Lambda'])), 4)), to=c(0,1)),
+     breaks = c(0,1, round(max(as.data.frame(Res_lam[,'Lambda'])), 2)),
+     labels=c("0",1,round(max(as.data.frame(Res_lam[,'Lambda'])),3)),
+     name = expression(lambda)) +
+  scale_x_continuous(breaks = seq(min(Res_lam[,"T"]), max(Res_lam[,"T"]), by = 2),expand = c(0, 0))  +
+  scale_y_continuous(expand = c(0, 0)) +
+  #ggtitle("kappa Size-dependent") +
+  #ggtitle("Temperature effect independent of size ") +
+  theme_bw()
+
+## PLOT STABLE STRUCTURE W AS A FUNCTION OF KAPPA AND/OR TEMP ####
+colnames(Res_w) <- c("T","kappa","Y","0",x)
+Res_w_long <- pivot_longer(as_tibble(Res_w), cols = c(5:ncol(Res_w)), 
+                           names_to = "Size", values_to ="biom") # not use column 4 & 5 (eggstage and recruits)
+c <- Res_w_long %>%
+  filter(T %in% c(277, 281, 283, 287, 290)) %>%
+  filter(kappa %in% 0.8) %>% #Floating point issue when comparing vector, therefore the use of %in%, can also use near()
+  ggplot(., aes(as.numeric(Size), biom, color = as.factor(T))) +
+  ggtitle("Stable structure for small Sizes, kappa=0.8") + 
+  geom_line(size=0.5) +
+  ylab("Stable structure w") +
+  xlab("Size") +
+  xlim(0,5000) +
+  theme_bw() +
+  theme(legend.position="none", 
+  plot.title = element_text(size = 12))+
+  labs(color = "Temp [K]")
+
+d <- Res_w_long %>%
+  filter(T %in% c(277, 281, 283, 287, 290)) %>%
+  filter(kappa %in% 0.8) %>% #Floating point issue when comparing vector, therefore the use of %in%, can also use near()
+  ggplot(., aes(as.numeric(Size), biom, color = as.factor(T))) +
+  ggtitle("Stable struct w/o Age 1, kappa=0.8") + 
+  geom_line(size=0.5) +
+  ylab("Stable structure w") +
+  xlab("Size") +
+  ylim(0,5e-8)+
+  theme_bw()+
+  theme(legend.position="none", 
+    plot.title = element_text(size = 12)) +
+  labs(color = "Temp [K]")
+
+colnames(Res_v) <- c("T","kappa","Y","0",x)
+Res_v_long <- pivot_longer(as_tibble(Res_v), cols = c(5:ncol(Res_v)), 
+                           names_to = "Size", values_to ="biom") # not use column 4 & 11 (eggstage and recruits)
+
+e<-Res_v_long %>%
+  filter(T %in% c(277, 281, 283, 287, 290)) %>%
+  filter(kappa %in% 0.8) %>% #Floating point issue when comparing vector, therefore the use of %in%, can also use near()
+  ggplot(., aes(as.numeric(Size), biom, color = as.factor(T))) +#, linetype = as.factor(kappa))) +
+  ggtitle("Repro. values over Size") + 
+  geom_line(size=0.8) +
+  ylab("Reproductive value V") +
+  xlab("Size")+
+  theme_bw() +
+  labs(color = "Temp [K]")
+```
+
+```{r, echo=FALSE,warning = FALSE}
+(a+b) / (c+d+e)
+```
+
+
+### Results with $n=500$
+
+```{r, include=FALSE}
+mmin <- 1     # min weight
+mmax <- 16000 # max weight
+n <- 500    # row/col number of the discretization-matrix of the continuos rates
+x <- seq(mmin,mmax, length=n)
+dx <- x[2] - x[1] # step size (grams) in the continuos size 
+
+rm(Res_lam)
+rm(Res_v)
+rm(Res_w)
+Res_lam <- read.delim("Res_lam0316_MainRES_n500.txt", sep = ",")
+Res_v <- read.delim("Res_v0316_MainRES_n500.txt", sep = ",")
+Res_w <- read.delim("Res_w0316_MainRES_n500.txt", sep = ",")
+a <- as.tibble(Res_lam) %>%
+  filter(T %in% c(277, 279, 281, 283, 285, 287, 289)) %>%
+  ggplot(., aes(kappa, Lambda, color = as.factor(T))) +
+  geom_line(size=0.5) +
+  ylab(expression(lambda~(Fitness))) +
+  xlab(expression(kappa~(Growth~Allocation))) +
+  labs(color = "Temp [K]") +
+  theme_bw()
+
+### PLOT A SURFACE OF FITNESS OVER TEMP (x) AND KAPPA (y)
+maxl<- as.data.frame(Res_lam) %>% 
+        group_by(T) %>%
+        slice_max(Lambda)
+
+b <- ggplot(as_tibble(Res_lam), aes(T,kappa)) +
+  geom_raster(aes(fill=round(Lambda, 4))) + #, interpolate = TRUE)   geom_smooth(data=maxl ,aes(T,kappa), size=1, se=FALSE) +
+  geom_point(data=maxl ,aes(T,kappa),size=0.1) +
+  #geom_point(data=maxl, aes(x=which(T == max(Lambda)),y=which(Kappa == max(Lambda)),colour="blue")) +
+  scale_fill_gradientn(
+     colours = c("black","white","yellow","red"),
+     values = rescale(c(0,0.9999,1, round(max(as.data.frame(Res_lam[,'Lambda'])), 4)), to=c(0,1)),
+     breaks = c(0,1, round(max(as.data.frame(Res_lam[,'Lambda'])), 2)),
+     labels=c("0",1,round(max(as.data.frame(Res_lam[,'Lambda'])),3)),
+     name = expression(lambda)) +
+  scale_x_continuous(breaks = seq(min(Res_lam[,"T"]), max(Res_lam[,"T"]), by = 2),expand = c(0, 0))  +
+  scale_y_continuous(expand = c(0, 0)) +
+  #ggtitle("kappa Size-dependent") +
+  #ggtitle("Temperature effect independent of size ") +
+  theme_bw()
+
+## PLOT STABLE STRUCTURE W AS A FUNCTION OF KAPPA AND/OR TEMP ####
+colnames(Res_w) <- c("T","kappa","Y","0",x)
+Res_w_long <- pivot_longer(as_tibble(Res_w), cols = c(5:ncol(Res_w)), 
+                           names_to = "Size", values_to ="biom") # column 4 & 5 (eggstage and recruits)
+c <- Res_w_long %>%
+  filter(T %in% c(277, 281, 283, 287, 290)) %>%
+  filter(kappa %in% 0.8) %>% #Floating point issue when comparing vector, therefore the use of %in%, can also use near()
+  ggplot(., aes(as.numeric(Size), biom, color = as.factor(T))) +
+  ggtitle("Stable structure for small Sizes, kappa=0.8") + 
+  geom_line(size=0.5) +
+  ylab("Stable structure w") +
+  xlab("Size") +
+  xlim(0,5000) +
+  theme_bw() +
+  theme(legend.position="none", 
+  plot.title = element_text(size = 12))+
+  labs(color = "Temp [K]")
+
+d <- Res_w_long %>%
+  filter(T %in% c(277, 281, 283, 287, 290)) %>%
+  filter(kappa %in% 0.8) %>% #Floating point issue when comparing vector, therefore the use of %in%, can also use near()
+  ggplot(., aes(as.numeric(Size), biom, color = as.factor(T))) +
+  ggtitle("Stable struct w/o Age 1, kappa=0.8") + 
+  geom_line(size=0.5) +
+  ylab("Stable structure w") +
+  xlab("Size") +
+  ylim(0,5e-8)+
+  theme_bw()+
+  theme(legend.position="none", 
+    plot.title = element_text(size = 12)) +
+  labs(color = "Temp [K]")
+
+colnames(Res_v) <- c("T","kappa","Y","0",x)
+Res_v_long <- pivot_longer(as_tibble(Res_v), cols = c(5:ncol(Res_v)), 
+                           names_to = "Size", values_to ="biom") # not use column 4 & 11 (eggstage and recruits)
+
+e<-Res_v_long %>%
+  filter(T %in% c(277, 281, 283, 287, 290)) %>%
+  filter(kappa %in% 0.8) %>% #Floating point issue when comparing vector, therefore the use of %in%, can also use near()
+  ggplot(., aes(as.numeric(Size), biom, color = as.factor(T))) +#, linetype = as.factor(kappa))) +
+  ggtitle("Repro. values over Size") + 
+  geom_line(size=0.8) +
+  ylab("Reproductive value V") +
+  xlab("Size")+
+  theme_bw() +
+  labs(color = "Temp [K]")
+```
+
+```{r, echo=FALSE,warning = FALSE}
+(a+b) / (c+d+e)
+```
+
+
