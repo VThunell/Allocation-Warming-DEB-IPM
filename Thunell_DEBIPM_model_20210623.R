@@ -107,7 +107,7 @@ ratefun <- function(m, Pars) { # mean function for y (dependent on mass) over on
 ### SIZES & PARAMETERS FOR IPM ####
 mmin <- 1     # min weight
 mmax <- 18000 # max weight
-n <- 1500   # row/col number of the discretization-matrix of the continuos rates
+n <- 1400   # row/col number of the discretization-matrix of the continuos rates
 x <- seq(mmin,mmax, length=n)
 dx <- x[2] - x[1] # step size (grams) in the continuos size spectra
 #for use of midpoint rule in IPM:
@@ -145,6 +145,7 @@ DEBgrowthfun <- function(m, Pars, y=x) {
   mu <- ratefun(m, Pars)[sl,2,] # mass on the last day of growth season for m
   sapply(mu, FUN = ydf)
 }
+
 ### REPRODUCTION f(x,T) ####
 # DEBrepfun uses the energy investment in reproduction dependent on mass and T 
 # over t to produce eggs in t+1 for an individual that in the start of t is x. 
@@ -174,7 +175,7 @@ DEBrepfun <- function(m, Pars, e_m = 0.00351388) { # Note that intake refers to 
 
 #sd(ltow_AYV((GData[GData$Age==1,]$Length)))
 DEBage1.size <- function(Pars, y=x, offvar = 48.12555^2){ #lognormal distribution of offspring weights
-  mu <- ratefun(e_m, Pars = c(T = Pars[["T"]], kappa = 1, Y = Pars[["Y"]]))[round(sl/2),2,] 
+  mu <- ratefun(e_m, Pars = c(T = Pars[["T"]], kappa = Pars[["kappa"]], Y = Pars[["Y"]]))[round(sl/2),2,] 
   yd <- dlnorm(y, meanlog=log(mu) - .5*log(1 + offvar/(mu^2)), sdlog=sqrt(log(1 + offvar/(mu^2))))
       yd/sum(yd*dx) # scaled distributon to 1, dx is step size in the k-matrix
 }
@@ -211,9 +212,9 @@ DEBsurvfun <- function(m, Pars) { # Mass-Temp dependence of yearly Mortality
     ifelse(starvS < m | starvS > 18000, 0, 1)
     }
   #ifelse(m < mmin, sx.firstyear(m,Pars), sx(m,Pars)*starvx(m, Pars))# multiply with F (fishing mortality function)
-  ifelse(m < mmin, sx.firstyear(m,Pars), Vsurvfun(m)*starvx(m, Pars))# multiply with F (fishing mortality function)
-  #ifelse(m < mmin, sx.firstyear(m,Pars), VsurvfunT(m,Pars)*starvx(m, Pars))# multiply with F (fishing mortality function)
-  #ifelse(m < mmin, sx.firstyear(m,Pars), 0.67*starvx(m, Pars))# multiply with F (fishing mortality function)
+  #ifelse(m < mmin, sx.firstyear(m,Pars), Vsurvfun(m))#*starvx(m, Pars))# multiply with F (fishing mortality function)
+  ifelse(m < mmin, sx.firstyear(m,Pars), VsurvfunT(m,Pars))#*starvx(m, Pars))# multiply with F (fishing mortality function)
+  #ifelse(m < mmin, sx.firstyear(m,Pars), 0.67)*starvx(m, Pars))# multiply with F (fishing mortality function)
   #ifelse(m < mmin, sx.firstyear(m,Pars), 0.67)# multiply with F (fishing mortality function)
 } 
 
@@ -252,8 +253,8 @@ K.matrix <- function(Pars) {
 #   v <- ifelse(w*v <= 0, 0, v)
 #   return(list("lambda" = max(Re(ev$values)), "w"=w, "v"=v)) }
 
-# vwlambda.projection_Weggs() with egg stage included:
-wvlambda.projection_Weggs <- function(Kmat, N0=rep(10,length(Kmat[1,])), tol=1e-6) {
+# vwlambda.projection:
+wvlambda.projection <- function(Kmat, N0=rep(10,length(Kmat[1,])), tol=1e-20) {
   Nt <- Nt2 <- N0
   lam <- 1
   prev.lam <- .5
@@ -267,35 +268,14 @@ wvlambda.projection_Weggs <- function(Kmat, N0=rep(10,length(Kmat[1,])), tol=1e-
     Nt2 <- Nt.new2
   }
   w <- Nt/sum(Nt)
-  w <- w/sum(w*dx)
+  w <- w/sum(w)
   v <- Nt2/sum(Nt.new2)
-  v <- v/sum(v*w*dx)
+  v <- v/sum(v*w)
   return(list("lambda"=lam, "w"=w,"v"=v))
 }
 
-# vwlambda.projection() without egg stage:
-wvlambda.projection_WOeggs <- function(Kmat, N0=rep(10,length(Kmat[1,])), tol=1e-6) {
-  Nt <- Nt2 <- N0
-  lam <- 1
-  prev.lam <- .5
-  tKmat <- t(Kmat)
-  while( abs(lam-prev.lam) > tol ){
-    prev.lam <- lam
-    Nt.new <- Kmat %*% Nt
-    Nt.new2 <- tKmat %*% Nt2
-    lam <- sum(Nt.new) / sum(Nt)
-    Nt <- Nt.new
-    Nt2 <- Nt.new2
-  }
-  w <- Nt[2:(n+1)]/sum(Nt[2:(n+1)])
-  w <- w/sum(w*dx)
-  v <- Nt2[2:(n+1)]/sum(Nt2[2:(n+1)]) #chnaged from Nt.new2 to Nt2
-  v <- v/sum(v*w*dx)
-  return(list("lambda"=lam, "w"=w,"v"=v))
-}
-
-onetest <- wvlambda.projection_WOeggs(K.matrix(GR_pars))
-sum(onetest$w)*dx
+# onetest <- wvlambda.projection(K.matrix(GR_pars))
+# sum(onetest$w)
 
 ### COHORT PROJECTION MODEL ####
 K.matrixCohort <- function(Pars) {
@@ -318,178 +298,14 @@ ProjCoh <- function(Pars,t,I_pop=c(5000000,rep(0,n))) {
   ay 
 }
 
-###CALCULATE LAMBDA, STABLE STRUCTURE AND REPRODUCTIVE VALUES FOR VARYING KAPPA AND TEMP VALUES ####
-
 # tic()
 #  wvlambda.projection(K.matrix(Pars <- c(T = 287,     # parameters for Temperature, feeding, allocation and Mass dependence
 #                                         kappa = 0.83, # allocation to respiration (Growth and maintenance)
 #                                         Y = 1) ))[1]
 # # toc()
-# 
-# ### Main RESULT - with temp x size interaction and size dep. kappa ####
-# 
-#  T <- seq(286,293,0.5) # temperature range
-#  kappa <- seq(0.6,1,0.04) # kappa range
-#  Y <- 1 # feeding levels
-# 
-#  
-#  Res_lam <- matrix(ncol = 3+1, nrow = length(kappa)*length(T)*length(Y)) # assuming 40 here from files
-#  Res_v  <-  matrix(ncol = 3+n, nrow = length(kappa)*length(T)*length(Y)) # assuming 40 here from files
-#  Res_w  <-  matrix(ncol = 3+n, nrow = length(kappa)*length(T)*length(Y)) # assuming 40 here from files
-# 
-# # Res_lam <- matrix(ncol = 3+1, nrow = length(ha_Ad)*length(T)*length(Y)) # assuming 40 here from files
-# # Res_v  <-  matrix(ncol = 3+n+1, nrow = length(ha_Ad)*length(T)*length(Y)) # assuming 40 here from files
-# # Res_w  <-  matrix(ncol = 3+n+1, nrow = length(ha_Ad)*length(T)*length(Y)) # assuming 40 here from files
-# 
-# parsK <- as.matrix(expand.grid(T,kappa,Y))
-# colnames(parsK) <- c("T","kappa","Y")
-# 
-# # tic()
-#  for (i in 1:nrow(parsK)){
-#    res <- wvlambda.projection_WOeggs(K.matrix(parsK[i,]))
-#    Res_lam[i,] <- c(parsK[i,],res$lam) #c(T[d],kappa[e],Y[f], res$lambda)
-#    Res_v[i,]   <- c(parsK[i,],res$v) #REPRODUCTIVE VALUES
-#    Res_w[i,]   <- c(parsK[i,],res$w) #STABLE STRUCTURE
-#    }
-# # # toc()
-# 
-# colnames(Res_lam) <- c("T","kappa","Y","Lambda")
-# colnames(Res_v) <- c("T","kappa","Y","0",x)
-# colnames(Res_w) <- c("T","kappa","Y","0",x)
-
-# write.table(Res_lam, file="Res_lam0316_baseline_Onlyyellow_n500.txt",quote=TRUE, sep=",", row.names=TRUE)
-# write.table(Res_v, file="Res_v0316__baseline_Onlyyellow_n500.txt",quote=TRUE, sep=",", row.names=TRUE)
-# write.table(Res_w, file="Res_w0316__baseline_Onlyyellow_n500.txt",quote=TRUE, sep=",", row.names=TRUE)
-
-# THERMAL or kappa SENSITIVITY OF LAMBDA ####
-# Sensitivity analysis to study how change in Lambda can be
-# attributed to change in different vital rates originating from 
-# a change in kappa or temperature.
-# The partial derivative of the output Y with respect to an input factor Xi
-# 
-# # Sensitivity based on Vindenes 2014:
-# 
-# dG.dm <- function(m, Pars){
-#   (DEBgrowthfun(m+0.1, Pars) - DEBgrowthfun(m, Pars))/0.1
-# }
-# 
-# #Sensitivity of the growth density function to temperature (approximate) 
-# 
-# dG.dT <- function(m, Pars){
-#   (DEBgrowthfun(m, c(T=Pars[["T"]]+0.001, 
-#                      kappa =Pars[["kappa"]], 
-#                      Y = Pars[["Y"]])) 
-#    - DEBgrowthfun(m, Pars))/0.001
-# }
-# 
-# ##SURVIVAL SENSITIVITY
-# #Sensitivity of the survival probability function to temperature (approximate) 
-# 
-# dS.dT <- function(m, Pars){
-#   (DEBsurvfun(m, c(T=Pars[["T"]]+0.001, 
-#                    kappa =Pars[["kappa"]], 
-#                    Y = Pars[["Y"]])) 
-#    - DEBsurvfun(m, Pars))/0.001
-# }
-# 
-# #Sensitivity of the survival probability function to length (approximate) 
-#  
-# dS.dm <- function(m, Pars){
-#   (DEBsurvfun(m+0.1, Pars) - DEBsurvfun(m, Pars))/0.1
-# }
-# 
-# # OFFSPRING SIZE SENSITIVITY
-# #Sensitivity of the offspring length density function to temperature (approximate)
-# 
-# dO.dT <- function(Pars){
-#   (DEBage1.size(c(T=Pars[["T"]]+0.001, 
-#                  kappa =Pars[["kappa"]], 
-#                  Y = Pars[["Y"]]))
-#    - (DEBage1.size(Pars)))/0.001
-# }
-# 
-# # Sensitivity of the fecundity function to length (approximate) 
-#  
-# dR.dm <- function(m, Pars){
-#   (DEBrepfun(m+0.1, Pars) - DEBrepfun(m, Pars))/0.1
-# }
-# 
-# # Sensitivity of the fecundity function to temperature (approximate) 
-# 
-# dR.dT <- function(m, Pars){
-#   (DEBrepfun(m, c(T=Pars[["T"]]+0.001, 
-#                   kappa =Pars[["kappa"]], 
-#                   Y = Pars[["Y"]])) 
-#    - DEBrepfun(m, Pars))/0.001
-# }
-# 
-# # Vindenes etal 2014 code
-# thermal.sensitivity <- function(Pars){
-#   res <- wvlambda.projection(Kmat = K.matrix(Pars))
-#   Fmat <- Smat <- Omat <- Gmat <- matrix(NA, n+1, n+1)
-#   sx <- c(DEBsurvfun(e_m, Pars),DEBsurvfun(x, Pars))
-#   dsx <- dS.dT(c(e_m,x), Pars)
-#   fx <- c(DEBrepfun(0, Pars), DEBrepfun(x, Pars))
-#   dfx <- dR.dT(c(0,x), Pars)
-#   offs <- c(0,DEBage1.size(Pars))
-#   doff <- c(0,dO.dT(Pars))
-#   gx <- dgx <- matrix(0,n+1,n+1)
-#   gx[2:(n+1),2:(n+1)] <- DEBgrowthfun(x, Pars) # unlike vindenens 2014, the DEBgrowthfun returns all y-distributions
-#   for(j in 2:(n+1)){
-#     dgx[2:(n+1),j] <- dG.dT(x[j-1], Pars)
-#   }
-#   gx[,n+1] <- gx[,n]
-#   dgx[,n+1] <- dgx[,n]
-#   for(i in 1:(n+1)){			
-#     Fmat[i,] <- res$v[i]*res$w*(dfx*sx[i])*dx
-#     Omat[i,] <- res$v[i]*res$w*(doff[i]*el_surv)*dx
-#     Smat[i,] <- res$v[i]*res$w*(dsx*gx[i,])*dx
-#     Gmat[i,] <- res$v[i]*res$w*(dgx[i,]*sx[i])*dx
-#   }
-#   list("Fecundity contribution"= apply(Fmat,2,sum),"Survival contribution"=apply(Smat,2,sum),"Growth contribution"= apply(Gmat,2,sum),"Offspring length contribution"= apply(Omat,2,sum),"Total contribution"=apply(Fmat,2,sum)+apply(Smat,2,sum)+apply(Gmat,2,sum)+apply(Omat,2,sum))
-# }	
-#  
-# # Tsensit <- thermal.sensitivity(GR_pars)
-# # # 1=fec sens, 2=surv sens, 3=growth sens, 4=offs sens,
-# # 
-# # par(mfrow=c(2,2), las=1, bty="l")
-# # plot(c(0,x), Tsensit[[1]], type="l", ylab="", ylim=c(-1e1,1e5),main=expression(paste("Fecudity contributions to d",  lambda, "/dT")), col=1, lwd=2, xlab="x")
-# # plot(c(0,x), Tsensit[[2]], type="l", ylab="", ylim=c(-1e-5,1e-5), main=expression(paste("Survival contributions to d",  lambda, "/dT")), col=2, lwd=2, xlab="Size x")
-# # plot(c(0,x), Tsensit[[3]], type="l", ylab="", ylim=c(-1e-6,1e-5),main=expression(paste("Growth Contributions to d",  lambda, "/dT")), col=3, lwd=2, xlab="Size x")
-# # plot(c(0,x), Tsensit[[4]], type="l", ylab="", ylim=c(0,1e-9),main=expression(paste("Offspring size contributions to d",  lambda,"/dT")), col=2, lwd=2, xlab="Size x")
-# # #plot(c(0,x), Tsensit[[5]], type="l", ylab="", ylim=c(0,1e-9),main=expression(paste("Contributions to d",  lambda, "/d",mu[z])), col=2, lwd=2, xlab="Size x")
-# 
-# Size.sensitivity <- function(Pars){
-#   res <- wvlambda.projection(Kmat = K.matrix(Pars))
-#   Fmat <- Smat <- Gmat <- matrix(NA, n+1, n+1)
-#   sx <- c(DEBsurvfun(e_m, Pars),DEBsurvfun(x, Pars))
-#   dsx <- dS.dm(c(e_m,x), Pars)
-#   fx <- c(DEBrepfun(0, Pars), DEBrepfun(x, Pars))
-#   dfx <- dR.dm(c(0,x), Pars)
-#   gx <- dgx <- matrix(0,n+1,n+1)
-#   gx[2:(n+1),2:(n+1)] <- DEBgrowthfun(x, Pars) # unlike vindenens 2014, the DEBgrowthfun returns all y-distributions
-#   for(j in 2:(n+1)){
-#     dgx[2:(n+1),j] <- dG.dm(x[j-1], Pars)
-#   }
-#   gx[,n+1] <- gx[,n]
-#   dgx[,n+1] <- dgx[,n]
-#   for(i in 1:(n+1)){			
-#     Fmat[i,] <- res$v[i]*res$w*(dfx*sx[i])*dx
-#     Smat[i,] <- res$v[i]*res$w*(dsx*gx[i,])*dx
-#     Gmat[i,] <- res$v[i]*res$w*(dgx[i,]*sx[i])*dx
-#   }
-#   list("Fecundity contribution"= apply(Fmat,2,sum),"Survival contribution"=apply(Smat,2,sum),"Growth contribution"= apply(Gmat,2,sum),"Total contribution"=apply(Fmat,2,sum)+apply(Smat,2,sum)+apply(Gmat,2,sum))
-# }	
-# 
-# # Ssensit <- Size.sensitivity(GR_pars)
-# # # 1=fec sens, 2=surv sens, 3=growth sens,4 = total
-# # 
-# # par(mfrow=c(1,1), las=1, bty="l")
-# # plot(c(0,x), Ssensit[[1]], type="l", ylab="", ylim=c(-1e1,1e7),main=expression(paste("Fecudity contributions to d",  lambda, "/dT")), col=1, lwd=2, xlab="x")
-# # plot(c(0,x), Ssensit[[2]], type="l", ylab="", ylim=c(-1e-8,1e-7), main=expression(paste("Survival contributions to d",  lambda, "/dT")), col=2, lwd=2, xlab="Size x")
-# # plot(c(0,x), Ssensit[[3]], type="l", ylab="", ylim=c(0,1e-8),main=expression(paste("Growth Contributions to d",  lambda, "/dT")), col=3, lwd=2, xlab="Size x")
-# 
-# 
+ 
+ 
+# OTHER DEMOGRAPHHIC STUFF
 # # Calculate R0 - net reproductive rate ####
 # library(matlib)
 # library(MASS)
@@ -498,132 +314,132 @@ ProjCoh <- function(Pars,t,I_pop=c(5000000,rep(0,n))) {
 # # and P is Smat. 
 # 
 # IPM = Fmatrix+Pmatrix fec +growth/surv
-R0_fun <-function(Pars){
-  Imat <- Smat <- Fmat <- matrix(0,n+1,n+1)
-  surv_x <- c(DEBsurvfun(e_m, Pars), DEBsurvfun(x, Pars))  # survival vector
-  Smat[2:(n+1),1] <- surv_x[1]*DEBage1.size(Pars) * dx #dx is dy, First column (and 2:101 row) of Smat probability of transitions from egg to sizes at age 1.  
-  Smat[2:(n+1),2:(n+1)] <- t(surv_x[2:(n+1)]*t(DEBgrowthfun(x, Pars) ) * dx)
-  Fmat[1,2:(n+1)] <- surv_x[2:(n+1)]*DEBrepfun(x, Pars) #Production of eggs
-  diag(Imat) <- 1
-  Nmatrix <- solve(Imat - Smat);
-  Rmatrix <- Fmat %*% Nmatrix
-  R0 <- Re(eigen(Rmatrix)$values[1])
-  return(R0)
-}
-R0_fun(GR_pars)
-
-fmr<-rbind(c(1,2,0),c(0,1,4),c(0,1,1))
-solve(fmr)
-ginv(fmr)
-# R0 = 3.80394 for GR_pars with both solve() and ginv()
-
-T <- seq(285,295,0.5) # temperature range
-kappa <- seq(0.6,1,0.05) # kappa range
-Y <- 1 # feeding levels
-
-Res_R0 <- matrix(ncol = 3+1, nrow = length(kappa)*length(T)*length(Y)) # assuming 40 here from files
-parsK <- as.matrix(expand.grid(T,kappa,Y))
-colnames(parsK) <- c("T","kappa","Y")
- 
-for (i in 1:nrow(parsK)){
-   res <- R0_fun(parsK[i,])
-   Res_R0[i,] <- c(parsK[i,],res) #c(T[d],kappa[e],Y[f], res$lambda)
-}
-colnames(Res_R0) <- c("T","kappa","Y","R0")
-
-maxl_R0 <- as.data.frame(Res_R0) %>% 
-  group_by(T) %>%
-  slice_max(R0)
-
-R_1 <- 
-  as_tibble(Res_R0) %>%
-  #filter(kappa <= 1) %>%
-  ggplot(., aes(T,kappa)) +
-  geom_raster(aes(fill=round(R0, 4)))+#, interpolate = TRUE) +
-  geom_line(data=maxl_R0 ,aes(T,kappa),size=0.85) +
-  scale_fill_gradient2(
-    low="white",
-    mid="yellow",
-    high="red",
-    name = expression(italic("R0"))) +
-  scale_x_continuous(expand = c(0,0), name = "Temperature [K]", limits = c(284,294),breaks = seq(283,295,2))+
-  scale_y_continuous(expand = c(0,0), name=expression(paste(kappa," (Growth allocation)")))+
-  coord_cartesian(xlim = c(284.5,293.5)) +
-  #annotate(geom="text", -Inf, Inf, label="A", hjust = -26, vjust = 3, size= 4, fontface = "bold")+
-  theme_bw()
-R_1
-
-as_tibble(Res_R0) %>%
-  #filter(kappa == 0.85) %>%
-  ggplot(., aes(T,R0, color = as.factor(kappa)), ) +
-  geom_line()
-
-# Calculate generation time (GT) ####
-R0_lam<- cbind(
-  semi_join(as.tibble(Res_R0),as.tibble(Res_lam[,1:2]), copy=TRUE),
-  semi_join(as.tibble(Res_lam),as.tibble(Res_R0[,1:2]), copy=TRUE)[,4])
-R0_lam["GT"] <- log(R0_lam$R0)/log(R0_lam$Lambda)
-
-as_tibble(R0_lam) %>%
-  ggplot(., aes(T,GT, color = as.factor(kappa)), ) +
-  geom_line()
-as_tibble(R0_lam) %>%
-  ggplot(., aes(kappa,GT, color = as.factor(T)), ) +
-  geom_line()
-
-# Calculate survivors to age 2 ####
-# Page 60 in Ellner et al 2016, survivors to age 2 is P^2 *n0 where 
-# P is Smat and n0(z) is the state dist. of a cohort at birth
-
-s2_fun <- function(Pars){
-  Smat <- matrix(0,n,n)
-  surv_x <- DEBsurvfun(x, Pars)  # survival vector
-  #Smat[,1:n] <- surv_x[1]*DEBage1.size(Pars) * dx #dx is dy, First column (and 2:101 row) of Smat probability of transitions from egg to sizes at age 1.  
-  Smat <- t(surv_x*t(DEBgrowthfun(x, Pars) ) )* dx
-  s2 <- (Smat*Smat)%*%DEBage1.size(Pars)
-  s2
-}
-jdh<-s2_fun(GR_pars)
-plot(x,jdh, type="l")
-
-T <- seq(285,295) # temperature range
-kappa <- seq(0.6,1,0.05) # kappa range
-Y <- 1 # feeding levels
-
-Res_s2 <- matrix(ncol = 3+n, nrow = length(kappa)*length(T)*length(Y)) # assuming 40 here from files
-parsK <- as.matrix(expand.grid(T,kappa,Y))
-colnames(parsK) <- c("T","kappa","Y")
-
-for (i in 1:nrow(parsK)){
-  res <- s2_fun(parsK[i,])
-  Res_s2[i,] <- c(parsK[i,],res) #c(T[d],kappa[e],Y[f], res$lambda)
-}
-colnames(Res_s2) <- c("T","kappa","Y",x)
-
-Res_s2_long <- pivot_longer(as_tibble(Res_s2), cols = c(4:ncol(Res_s2)), 
-                           names_to = "Size", values_to ="biom") # not use column 4 & 11 (eggstage and recruits)
-Res_s2_long %>%
-  filter(as.numeric(Size) < 2500) %>%
-  ggplot(., aes(T,as.numeric(Size), z=biom)) +#, color = as.factor(T))) +#, linetype = as.factor(kappa))) +
-  geom_contour_filled()+
-  scale_x_continuous(name = "Temperature [K]", limits = c(285,293),breaks = seq(283,293,2))+
-  #annotate(geom="text", -Inf, Inf, label="D", hjust = -20, vjust = 2, size= 4, fontface = "bold")+
-  ylab("Weight [g]")+
-  #scale_fill_manual(values = rev(mycolors), name="Reproductive value v)")+
-  theme_bw()
-
-# maxl_s2 <- as.data.frame(Res_s2) %>% 
+# R0_fun <-function(Pars){
+#   Imat <- Smat <- Fmat <- matrix(0,n+1,n+1)
+#   surv_x <- c(DEBsurvfun(e_m, Pars), DEBsurvfun(x, Pars))  # survival vector
+#   Smat[2:(n+1),1] <- surv_x[1]*DEBage1.size(Pars) * dx #dx is dy, First column (and 2:101 row) of Smat probability of transitions from egg to sizes at age 1.  
+#   Smat[2:(n+1),2:(n+1)] <- t(surv_x[2:(n+1)]*t(DEBgrowthfun(x, Pars) ) * dx)
+#   Fmat[1,2:(n+1)] <- surv_x[2:(n+1)]*DEBrepfun(x, Pars) #Production of eggs
+#   diag(Imat) <- 1
+#   Nmatrix <- solve(Imat - Smat);
+#   Rmatrix <- Fmat %*% Nmatrix
+#   R0 <- Re(eigen(Rmatrix)$values[1])
+#   return(R0)
+# }
+# R0_fun(GR_pars)
+# 
+# fmr<-rbind(c(1,2,0),c(0,1,4),c(0,1,1))
+# solve(fmr)
+# ginv(fmr)
+# # R0 = 3.80394 for GR_pars with both solve() and ginv()
+# 
+# T <- seq(285,295,0.5) # temperature range
+# kappa <- seq(0.6,1,0.05) # kappa range
+# Y <- 1 # feeding levels
+# 
+# Res_R0 <- matrix(ncol = 3+1, nrow = length(kappa)*length(T)*length(Y)) # assuming 40 here from files
+# parsK <- as.matrix(expand.grid(T,kappa,Y))
+# colnames(parsK) <- c("T","kappa","Y")
+#  
+# for (i in 1:nrow(parsK)){
+#    res <- R0_fun(parsK[i,])
+#    Res_R0[i,] <- c(parsK[i,],res) #c(T[d],kappa[e],Y[f], res$lambda)
+# }
+# colnames(Res_R0) <- c("T","kappa","Y","R0")
+# 
+# maxl_R0 <- as.data.frame(Res_R0) %>% 
 #   group_by(T) %>%
-#   slice_max(biom)
-
-Res_s2_long %>%
-  filter(as.numeric(Size) < 2500) %>%
-  filter(kappa == 0.95) %>%
-  ggplot(., aes(T,as.numeric(Size), z=biom)) +#, color = as.factor(T))) +#, linetype = as.factor(kappa))) +
-  geom_contour_filled()+
-  scale_x_continuous(name = "Temperature [K]", limits = c(285,293),breaks = seq(283,293,2))+
-  #annotate(geom="text", -Inf, Inf, label="D", hjust = -20, vjust = 2, size= 4, fontface = "bold")+
-  ylab("Weight [g]")+
-  #scale_fill_manual(values = rev(mycolors), name="Reproductive value v)")+
-  theme_bw()
-
+#   slice_max(R0)
+# 
+# R_1 <- 
+#   as_tibble(Res_R0) %>%
+#   #filter(kappa <= 1) %>%
+#   ggplot(., aes(T,kappa)) +
+#   geom_raster(aes(fill=round(R0, 4)))+#, interpolate = TRUE) +
+#   geom_line(data=maxl_R0 ,aes(T,kappa),size=0.85) +
+#   scale_fill_gradient2(
+#     low="white",
+#     mid="yellow",
+#     high="red",
+#     name = expression(italic("R0"))) +
+#   scale_x_continuous(expand = c(0,0), name = "Temperature [K]", limits = c(284,294),breaks = seq(283,295,2))+
+#   scale_y_continuous(expand = c(0,0), name=expression(paste(kappa," (Growth allocation)")))+
+#   coord_cartesian(xlim = c(284.5,293.5)) +
+#   #annotate(geom="text", -Inf, Inf, label="A", hjust = -26, vjust = 3, size= 4, fontface = "bold")+
+#   theme_bw()
+# R_1
+# 
+# as_tibble(Res_R0) %>%
+#   #filter(kappa == 0.85) %>%
+#   ggplot(., aes(T,R0, color = as.factor(kappa)), ) +
+#   geom_line()
+# 
+# # Calculate generation time (GT) ####
+# R0_lam<- cbind(
+#   semi_join(as.tibble(Res_R0),as.tibble(Res_lam[,1:2]), copy=TRUE),
+#   semi_join(as.tibble(Res_lam),as.tibble(Res_R0[,1:2]), copy=TRUE)[,4])
+# R0_lam["GT"] <- log(R0_lam$R0)/log(R0_lam$Lambda)
+# 
+# as_tibble(R0_lam) %>%
+#   ggplot(., aes(T,GT, color = as.factor(kappa)), ) +
+#   geom_line()
+# as_tibble(R0_lam) %>%
+#   ggplot(., aes(kappa,GT, color = as.factor(T)), ) +
+#   geom_line()
+# 
+# # Calculate survivors to age 2 ####
+# # Page 60 in Ellner et al 2016, survivors to age 2 is P^2 *n0 where 
+# # P is Smat and n0(z) is the state dist. of a cohort at birth
+# 
+# s2_fun <- function(Pars){
+#   Smat <- matrix(0,n,n)
+#   surv_x <- DEBsurvfun(x, Pars)  # survival vector
+#   #Smat[,1:n] <- surv_x[1]*DEBage1.size(Pars) * dx #dx is dy, First column (and 2:101 row) of Smat probability of transitions from egg to sizes at age 1.  
+#   Smat <- t(surv_x*t(DEBgrowthfun(x, Pars) ) )* dx
+#   s2 <- (Smat*Smat)%*%DEBage1.size(Pars)
+#   s2
+# }
+# jdh<-s2_fun(GR_pars)
+# plot(x,jdh, type="l")
+# 
+# T <- seq(285,295) # temperature range
+# kappa <- seq(0.6,1,0.05) # kappa range
+# Y <- 1 # feeding levels
+# 
+# Res_s2 <- matrix(ncol = 3+n, nrow = length(kappa)*length(T)*length(Y)) # assuming 40 here from files
+# parsK <- as.matrix(expand.grid(T,kappa,Y))
+# colnames(parsK) <- c("T","kappa","Y")
+# 
+# for (i in 1:nrow(parsK)){
+#   res <- s2_fun(parsK[i,])
+#   Res_s2[i,] <- c(parsK[i,],res) #c(T[d],kappa[e],Y[f], res$lambda)
+# }
+# colnames(Res_s2) <- c("T","kappa","Y",x)
+# 
+# Res_s2_long <- pivot_longer(as_tibble(Res_s2), cols = c(4:ncol(Res_s2)), 
+#                            names_to = "Size", values_to ="biom") # not use column 4 & 11 (eggstage and recruits)
+# Res_s2_long %>%
+#   filter(as.numeric(Size) < 2500) %>%
+#   ggplot(., aes(T,as.numeric(Size), z=biom)) +#, color = as.factor(T))) +#, linetype = as.factor(kappa))) +
+#   geom_contour_filled()+
+#   scale_x_continuous(name = "Temperature [K]", limits = c(285,293),breaks = seq(283,293,2))+
+#   #annotate(geom="text", -Inf, Inf, label="D", hjust = -20, vjust = 2, size= 4, fontface = "bold")+
+#   ylab("Weight [g]")+
+#   #scale_fill_manual(values = rev(mycolors), name="Reproductive value v)")+
+#   theme_bw()
+# 
+# # maxl_s2 <- as.data.frame(Res_s2) %>% 
+# #   group_by(T) %>%
+# #   slice_max(biom)
+# 
+# Res_s2_long %>%
+#   filter(as.numeric(Size) < 2500) %>%
+#   filter(kappa == 0.95) %>%
+#   ggplot(., aes(T,as.numeric(Size), z=biom)) +#, color = as.factor(T))) +#, linetype = as.factor(kappa))) +
+#   geom_contour_filled()+
+#   scale_x_continuous(name = "Temperature [K]", limits = c(285,293),breaks = seq(283,293,2))+
+#   #annotate(geom="text", -Inf, Inf, label="D", hjust = -20, vjust = 2, size= 4, fontface = "bold")+
+#   ylab("Weight [g]")+
+#   #scale_fill_manual(values = rev(mycolors), name="Reproductive value v)")+
+#   theme_bw()
+# 
