@@ -9,6 +9,8 @@
 # IPM kernel and projection matrix, calculation of lambda, stable population 
 # structure and reproductive values
 
+ #### lshflsdf
+
 #setwd("C:/Users/vitl0001/VThunell_repos/Temperature-DEBIPM")
 YVPike <- load("~/Manus2/R/Manus2R/PikeDataFiles.R")
 
