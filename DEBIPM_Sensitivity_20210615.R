@@ -15,19 +15,37 @@ Res_w <- read.delim("//storage-og.slu.se/home$/vitl0001/My Documents/Manus2/Resu
 #Res_w <- read.delim("Res_w_1_0427.txt", sep = ",")
 colnames(Res_w)[4:ncol(Res_w)] <- sub("X", "", colnames(Res_w)[4:ncol(Res_w)])
 
+maxl_1 <- as.data.frame(Res_lam) %>% 
+  group_by(T) %>%
+  slice_max(Lambda)
+maxl_1["Sur_f"] <- "Vin"
+
 # Numerical differentiation (difference forward differentiation, 
 # i.e. ( f(x + h) - f(x) ) / h) ) of dGrow/dk_0, dFec/dk_0 and dAge1/k_0. 
 G_NumDer <- function(h ,m, Pars){
   (DEBgrowthfun(m, Pars = c(T = Pars[["T"]],kappa = Pars[["kappa"]] + h,Y = Pars[["Y"]])) -
      DEBgrowthfun(m, Pars = c(T = Pars[["T"]],kappa = Pars[["kappa"]],Y = Pars[["Y"]])))/h
-} # Note that DEBgrowthfun gives the n * n matrix of prob. density distributions, 
-# the rowSums thus gives density of a size class in t+1
+} 
 #plot(x,G_NumDer(h=0.00001,x,GR_pars), type = "l") 
 #lines(x,G_NumDer(h=0.0001,x,GR_pars), type = "l", col="red") # converges at h=0.0001
+
+Gr_AnDer <- function(m, Pars){
+  Gr_s <- unname(ratefun(m, Pars)[sl,2,]) #mass
+  Gr_s <- exp(-Gr_s/(max(x)*2))*alpha*(eps1*(Gr_s^eps2)*rI_T_GU2(Pars[["T"]], Gr_s)) #2 is slope k_m
+  return(Gr_s)
+}
+
 F_NumDer <- function(h ,m, Pars){
   (DEBrepfun(m, Pars = c(T = Pars[["T"]],kappa = Pars[["kappa"]] + h,Y = Pars[["Y"]])) - 
-     DEBrepfun(m, Pars = c(T = Pars[["T"]],kappa = Pars[["kappa"]],Y = Pars[["Y"]])))/h
+   DEBrepfun(m, Pars = c(T = Pars[["T"]],kappa = Pars[["kappa"]],Y = Pars[["Y"]])))/h
 }
+
+F_AnDer <- function(m, Pars){
+  f_s <- unname(ratefun(m, Pars)[183,2,]) #mass
+  f_s <- (-0.5*e_m)*exp(-f_s/(max(x)*2))*alpha*(eps1*(f_s^eps2)*rI_T_GU2(Pars[["T"]], f_s)) #2 is slope k_m
+  return(f_s)
+}
+F_AnDer(x,Sens_Pars[1,])
 # plot(x,F_NumDer(h=0.000001,x,GR_pars), type = "l") 
 # lines(x,F_NumDer(h=0.00001,x,GR_pars), type = "l", col="red") # converges at h=0.00001
 
@@ -35,21 +53,26 @@ A1_NumDer <- function(h ,m, Pars){
   (DEBage1.size(Pars = c(T = Pars[["T"]],kappa = Pars[["kappa"]] + h,Y = Pars[["Y"]])) - 
      DEBage1.size(Pars = c(T = Pars[["T"]],kappa = Pars[["kappa"]],Y = Pars[["Y"]])))/h
 }
-# plot(x,A1_NumDer(h=0.0001,x,GR_pars), type = "l")
+#plot(x,A1_NumDer(h=0.0001,x,GR_pars), type = "l")
 # lines(x,A1_NumDer(h=0.001,x,GR_pars), type = "l", col="red") # converges at h=0.001
-
+A1_AnDer <- function(m, Pars){
+  a1_s <- unname(ratefun(m, Pars)[round(sl/2),2,]) #mass
+  a1_s <- exp(-a1_s/(max(x)*2))*alpha*(eps1*(a1_s^eps2)*rI_T_GU2(Pars[["T"]], a1_s)) #2 is slope k_m
+  return(a1_s)
+}
+plot(x, A1_AnDer(x,Sens_Pars[1,]), type="l")
 
 whichMinMax <- function(sens){
   sens[which(is.na(sens))] <-0 # replace na:s with 0
   sens[which.max( abs(sens) )] # max (or min) of each row 
 }
 
-
 # optimum kappa dependent on temperature:
 OptPars <- 
   as.data.frame(maxl_1[,1:3]) %>%
   filter(T %in% c(287, 289, 291))
 
+Sens_Pars <- OptPars
 Sens_Pars <- rbind(OptPars, cbind(T=c(287,289,291),kappa=c(0.83,0.83,0.83), Y=c(1,1,1)))
 #Res_Sens <- matrix(ncol = 3+1+n, nrow = nrow(Sens_Pars)) # assuming 40 here from files
 #parsK <- as.matrix(expand.grid(T,kappa,Y))
@@ -60,46 +83,58 @@ for (i in 1:nrow(Sens_Pars)){
   res_v <- as.numeric(Res_v %>% filter(T == Sens_Pars[i,1] & kappa==Sens_Pars[i,2]))[4:ncol(Res_v)]
   res_w <- as.numeric(Res_w %>% filter(T == Sens_Pars[i,1] & kappa==Sens_Pars[i,2]))[4:ncol(Res_w)]
  
-  Gr_cont <- bind_cols(Size=x, Temp=Sens_Pars[i,1], kappa=Sens_Pars[i,2],
-                          vr="Gr", outer(res_v[2:(n+1)], res_w[2:(n+1)]) * DEBsurvfun(x, Sens_Pars[i,]) * G_NumDer(h=0.00001,x,Sens_Pars[i,])
-                         )
-  Gr_cont["Sens"] <-apply(Gr_cont[5:ncol(Gr_cont)],1,FUN=whichMinMax)
-  Gr_cont<-Gr_cont[,c(1:4,ncol(Gr_cont))]
-  
-  F_cont  <- bind_cols(Size=x, Temp=Sens_Pars[i,1], kappa=Sens_Pars[i,2],
-                          vr="F",  Sens=res_v[1]*res_w[2:(n+1)] * DEBsurvfun(x, Sens_Pars[i,]) * F_NumDer(h=0.00001,x,Sens_Pars[i,]))
-  A1_cont <- bind_cols(Size=x, Temp=Sens_Pars[i,1], kappa=Sens_Pars[i,2], 
-                          vr="A1", Sens=res_v[2:(n+1)]*res_w[1] * el_surv * A1_NumDer(h=0.00001,x,Sens_Pars[i,]))
+  # Gr_cont <- bind_cols(Size=x, Temp=Sens_Pars[i,1], kappa=Sens_Pars[i,2],
+  #                         vr="Gr", outer(res_v[2:(n+1)], res_w[2:(n+1)]) * DEBsurvfun(x, Sens_Pars[i,]) * G_NumDer(h=0.00001,x,Sens_Pars[i,])
+  #                        )
+    Gr_cont <- bind_cols(Size=x, Temp=Sens_Pars[i,1], kappa=Sens_Pars[i,2],
+                          vr="Gr", outer(res_v[2:(n+1)], res_w[2:(n+1)]) * DEBsurvfun(x, Sens_Pars[i,]) 
+                         * Gr_AnDer(x,Sens_Pars[i,])) 
+      Gr_cont["Sens"] <-apply(Gr_cont[5:ncol(Gr_cont)],1,FUN=whichMinMax)# to choose the abs(max) of each size class as DEBgrowth iigves the prob dens dist 
+      Gr_cont<-Gr_cont[,c(1:4,ncol(Gr_cont))]
+    
+    F_cont  <- bind_cols(Size=x, Temp=Sens_Pars[i,1], kappa=Sens_Pars[i,2],
+                          vr="F",  Sens=res_v[1]*res_w[2:(n+1)] 
+                         * DEBsurvfun(x, Sens_Pars[i,]) 
+                         * F_AnDer(x,Sens_Pars[i,])) # F_NumDer(h=0.00001,x,Sens_Pars[i,]))                     
+    
+    A1_cont <- bind_cols(Size=x, Temp=Sens_Pars[i,1], kappa=Sens_Pars[i,2], 
+                          vr="A1", Sens=res_v[2:(n+1)]*res_w[1] * el_surv 
+                         * A1_AnDer(x,Sens_Pars[i,])) # A1_NumDer(h=0.00001,x,Sens_Pars[i,]))
   
   Res_Sens <- rbind(rbind(Gr_cont,F_cont,A1_cont), Res_Sens) #c(T[d],kappa[e],Y[f], res$lambda)
 }
 
 Res_Sens <-
 Res_Sens %>%
-  mutate(Scen = ifelse(kappa==0.83,"Baseline k_0","Optimal k_0"))
+  mutate(Scen = ifelse(kappa==0.83,"Baselinek_0","Optimalk_0"))
        # colnames(Res_R0) <- c("T","kappa","Y","R0")
 
 mycolors<-RColorBrewer::brewer.pal(4,"Dark2")[2:4]
 cont.labs <- c("Age 1 size", "Fecundity", "Growth")
 names(cont.labs) <- c("A1", "F", "Gr")
+
 Fig5_sens <-
 Res_Sens %>%
+  filter(Scen == "Optimalk_0") %>%
+  filter(vr == c("F", "A1")) %>%
   mutate(vr=as.factor(vr)) %>%
   ggplot(.) +
-  geom_line(aes(Size, Sens, linetype = Scen, color = as.factor(Temp))) +
+  geom_path(aes(Size, Sens, color = as.factor(Temp))) +
   #facet_wrap(Scen~vr, nrow=2, scales = "free", labeller = labeller(vr=cont_labs)) +
-  facet_grid(.+vr~Temp, labeller = labeller(vr=cont.labs)) +
-  xlim(0,2000) +
+  facet_grid(vr~., labeller = labeller(vr=cont.labs), scales="free") +
+  xlim(0,15000) +
+  geom_vline(xintercept=400) +
   ylab("Sensitivity") +
   xlab("Weight [g]") +
   scale_colour_manual(values = mycolors, name= "Temperature [K]") +
+  scale_linetype_manual(values = c("dashed", "solid"), name= "Allocation") +
   theme_bw() +
   theme(panel.background = element_rect(fill = "white", colour = "black"),
         strip.background = element_blank(),
         panel.border = element_rect(colour = "black", fill = NA))
 
-#pdf("DEBIPM_Fig5_Sens__small_20210709.pdf", width = 8, height = 6)
-pdf("DEBIPM_Fig5_Sens__all_20210709.pdf", width = 8, height = 6)
+# pdf("DEBIPM_Fig5_Sens_all_20210826.pdf", width = 8, height = 6)
+# pdf("DEBIPM_Fig5_Sens__all_20210709.pdf", width = 8, height = 6)
 Fig5_sens
 dev.off()
 
@@ -111,8 +146,6 @@ sum(A1_cont289$Sens,na.rm=TRUE)
 # NO, what am I doing wrong
 
 sum(res_w287[2:(n+1)])
-
-
 
 
 ### OLD OLD ###

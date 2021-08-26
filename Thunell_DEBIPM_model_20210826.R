@@ -82,14 +82,16 @@ rI_T_GU2 <- function(T, m) { # GU Temp dependence of intake
 # Intake here refers to net energy available for growth, reproduction and maintenance
 
 dwdt <- function(time, m, Pars) {
-  maintenance <- (rho1*(m^rho2)*rM_T_AL2(Pars['T'], m))   # Maintenance rate at time, mass with Pars
+  with(as.list(c(m, Pars)), {
+  maintenance <- (rho1*(m^rho2)*rM_T_AL2(T, m))   # Maintenance rate at time, mass with Pars
   #ifelse(m >= 1,
-  intake <- alpha*Pars['Y']*eps1*(m^eps2)*rI_T_GU2(Pars['T'], m)#,
+  intake <- alpha*Y*eps1*(m^eps2)*rI_T_GU2(T, m)#,
   #intake <- (alpha*Y2*eps1*(m^eps2)*rI_T_GU2(Pars['T'], m))) # Intake energy rate at time, mass with Pars, NOTE intake rate multiplied with alpha and Y
-  mass <- kap_fun(m,Pars["kappa"])*intake - maintenance    # Growth rate at time, mass with Pars
+  mass <- kap_fun(m,kappa)*intake - maintenance    # Growth rate at time, mass with Pars
   #mass <- Pars['kappa']*intake - maintenance    # Growth rate at time, mass with Pars
   return(list(mass, maintenance, intake)) # return all rates
- }
+ })
+}
 
 
 ratefun <- function(m, Pars) { # mean function for y (dependent on mass) over one time step (one season). 
@@ -158,15 +160,20 @@ DEBgrowthfun <- function(m, Pars, y=x) {
 DEBrepfun <- function(m, Pars, e_m = 0.00351388) { # Note that intake refers to net energy available for growth, reproduction and maintenance
    Devm = 417 # *(1 - pars[["kappa"]])
    fecund <- function(m, Pars, e_m) {
-    f <- ratefun(m, Pars)
-    f <- ifelse(f[,"mass",] < Devm,  0, #is it mature? # see text for the following conditions...
-           ifelse(kap_fun(m,Pars["kappa"])*f[,"intake",] >= f[,"maintenance",], f[,"intake",]*(1-kap_fun(m,Pars["kappa"])), #can available energy from intake cover maintenance, NOTE:intake is already scaled with Y*alpha
-             ifelse(kap_fun(m,Pars["kappa"])*f[,"intake",] < f[,"maintenance",] & (f[,"maintenance",] <= f[,"intake",]),
-                   (1-kap_fun(m,Pars["kappa"]))*f[,"intake",] + kap_fun(m,Pars["kappa"])*f[,"intake",] - f[,"maintenance",], 0)))
+     with(as.list(c(m, Pars)), {
+      f <- ratefun(m, Pars)
+      f <- ifelse(f[,"mass",] < Devm,  0, #is it mature? # see text for the following conditions...
+             ifelse(kap_fun(f[,"mass",],kappa)*f[,"intake",] >= f[,"maintenance",], f[,"intake",]*(1-kap_fun(f[,"mass",],kappa)), #can available energy from intake cover maintenance, NOTE:intake is already scaled with Y*alpha
+               ifelse(kap_fun(f[,"mass",],kappa)*f[,"intake",] < f[,"maintenance",] & (f[,"maintenance",] <= f[,"intake",]),
+                     (1-kap_fun(f[,"mass",],kappa))*f[,"intake",] + kap_fun(f[,"mass",],kappa)*f[,"intake",] - f[,"maintenance",], 0)))
     sum(f)/e_m * 0.5 #- 10*y^0.6# Summed energy allocated to reproduction reserve in one season diveded by egg weight and 0.5 from sex ratio (half of the eggs are female)
+     })
    }
    sapply(m, fecund, Pars, e_m)
  }
+
+#ratefun(19, Sens_Pars[1,]) #an individual that weighs 19 grams will be > 417 g during growth season
+#DEBrepfun(x[1:2],Sens_Pars[1,]) # and thu produce some eggs for next spring
 
 ### OFFSPRING SIZE DISTRIBUTION o(eggsize,T)####
 # Probability of an egg to hatch and grow into size y in t+1?
