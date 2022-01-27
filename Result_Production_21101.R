@@ -1,0 +1,185 @@
+# Results production
+
+# 1 - Baseline (Vindenes_Tsurv)
+# 2 - Temp independent surv (Vsurvfun(m))
+# 3 - Size independent surv (0.67)
+
+#ifelse(m < mmin, sx.firstyear(m,Pars), VsurvfunT(m,Pars))#*starvx(m, Pars))# multiply with F (fishing mortality function)
+#ifelse(m < mmin, sx.firstyear(m,Pars), Vsurvfun(m))#*starvx(m, Pars))# multiply with F (fishing mortality function)
+#ifelse(m < mmin, sx.firstyear(m,Pars), 0.67)# multiply with F (fishing mortality function)
+
+### RESULT 1 ####
+date<-Sys.Date()
+DEBparams <- as.data.frame(rbind(rho1,rho2,eps1,eps2,alpha,sl,T0,
+                                 k,cM,EaI,EaM,EaS,Td,EdI))
+IPMparams <- as.data.frame(rbind(mmin,mmax,n,dx,e_m,el_surv))
+meta <- rbind(DEBparams,IPMparams, kapfun=kap_fun(100, kappa=0.83))
+write.table(meta, file=paste("Res_meta_1_",date,".txt"),quote=TRUE, sep=",", row.names=TRUE)
+
+T <- seq(283.5,294.5,0.25) # temperature range
+kappa <- seq(0.59,1,0.01) # kappa range
+Y <- 1 # feeding levels
+
+Res_lam <- matrix(ncol = 3+1, nrow = length(kappa)*length(T)*length(Y)) # assuming 40 here from files
+Res_v  <-  matrix(ncol = 3+n+1, nrow = length(kappa)*length(T)*length(Y)) # assuming 40 here from files
+Res_w  <-  matrix(ncol = 3+n+1, nrow = length(kappa)*length(T)*length(Y)) # assuming 40 here from files
+
+#length(Res_lam[,1])
+
+parsK <- as.matrix(expand.grid(T,kappa,Y))
+colnames(parsK) <- c("T","kappa","Y")
+
+for (i in 1:nrow(parsK)){
+  res <- wvlambda.projection(K.matrix(parsK[i,]))
+  Res_lam[i,] <- c(parsK[i,],res$lam) #c(T[d],kappa[e],Y[f], res$lambda)
+  Res_v[i,]   <- c(parsK[i,],res$v) #REPRODUCTIVE VALUES
+  Res_w[i,]   <- c(parsK[i,],res$w) #STABLE STRUCTURE
+}
+
+colnames(Res_lam) <- c("T","kappa","Y","Lambda")
+colnames(Res_v) <- c("T","kappa","Y","0",x)
+colnames(Res_w) <- c("T","kappa","Y","0",x)
+
+write.table(Res_lam, file="Res_lam_1_1108.txt",quote=TRUE, sep=",", row.names=TRUE)
+write.table(Res_v, file="Res_v_1_1108.txt",quote=TRUE, sep=",", row.names=TRUE)
+write.table(Res_w, file="Res_w_1_1108.txt",quote=TRUE, sep=",", row.names=TRUE)
+
+
+### RESULT 2 ####
+
+DEBsurvfun <- function(m, Pars) { # Mass-Temp dependence of yearly Mortality 
+  sx <- function(m, Pars){ # natural baseline survival
+    exp(-3*m^-0.2*exp(EaS*(Pars[['T']]-T0)/(k*Pars[['T']]*T0))) #3*^-.288 is yearly mortality rate for 1 gram unit weight from Lorenzen 1996
+  } #conf limits Lorenzon 1996: 0.315, 0.261
+  Vsurvfun <- function(m, z=10.34){
+    sxV <- function(m, z=10.34){ # sx from Vindenes 2014
+      1/(1+exp(13.53316 - 0.50977*wtol_AYV(m) - (-0.00393)
+               *wtol_AYV(m)^2 - 0.19312*z - (-0.00679)
+               *wtol_AYV(m)*z))
+    }
+    xmax <- x[which(sxV(x) == max(sxV(x)))]
+    ifelse(m < xmax, sxV(m), sxV(xmax))
+  }
+  VsurvfunT <- function(m, Pars){
+    zT=10.34+Pars[["T"]]-287 # make 287 equal to 283 survival in Vindenes 2014 since 283 is yearly mean Temp 287 is summer mean temp
+    sxV <- function(m, z=zT){ # sx from Vindenes 2014
+      1/(1+exp(13.53316 - 0.50977*wtol_AYV(m) - (-0.00393)
+               *wtol_AYV(m)^2 - 0.19312*z - (-0.00679)
+               *wtol_AYV(m)*z))
+    }
+    xmax <- x[which(sxV(x) == max(sxV(x)))]
+    ifelse(m < xmax, sxV(m), sxV(xmax))
+  }
+  sx.firstyear <- function(m, Pars){ # first year survival
+    el_surv#*sx(ratefun(e_m,Pars)[round(sl/2),2,], Pars)
+  }
+  starvx <- function(m,Pars) { # starvation survival
+    starvS <- ratefun(m, Pars)[sl,2,]
+    ifelse(starvS < m | starvS > 18000, 0, 1)
+  }
+  ifelse(m < mmin, sx.firstyear(m,Pars), Vsurvfun(m))#*starvx(m, Pars))# multiply with F (fishing mortality function)
+} 
+
+DEBparams <- as.data.frame(rbind(rho1,rho2,eps1,eps2,alpha,sl,T0,
+                                 k,cM,EaI,EaM,EaS,Td,EdI))
+IPMparams <- as.data.frame(rbind(mmin,mmax,n,dx,e_m,el_surv))
+meta <- rbind(DEBparams,IPMparams, kapfun=kap_fun(100))
+write.table(meta, file="Res_meta_2_1011.txt",quote=TRUE, sep=",", row.names=TRUE)
+
+T <- seq(283.5,294.5,0.25) # temperature range
+kappa <- seq(0.59,1,0.01) # kappa range
+Y <- 1 # feeding levels
+
+Res_lam <- matrix(ncol = 3+1, nrow = length(kappa)*length(T)*length(Y)) # assuming 40 here from files
+Res_v  <-  matrix(ncol = 3+n+1, nrow = length(kappa)*length(T)*length(Y)) # assuming 40 here from files
+Res_w  <-  matrix(ncol = 3+n+1, nrow = length(kappa)*length(T)*length(Y)) # assuming 40 here from files
+
+parsK <- as.matrix(expand.grid(T,kappa,Y))
+colnames(parsK) <- c("T","kappa","Y")
+
+for (i in 1:nrow(parsK)){
+  res <- wvlambda.projection(K.matrix(parsK[i,]))
+  Res_lam[i,] <- c(parsK[i,],res$lam) #c(T[d],kappa[e],Y[f], res$lambda)
+  Res_v[i,]   <- c(parsK[i,],res$v) #REPRODUCTIVE VALUES
+  Res_w[i,]   <- c(parsK[i,],res$w) #STABLE STRUCTURE
+}
+
+colnames(Res_lam) <- c("T","kappa","Y","Lambda")
+colnames(Res_v) <- c("T","kappa","Y","0",x)
+colnames(Res_w) <- c("T","kappa","Y","0",x)
+
+write.table(Res_lam, file="Res_lam_2_1108.txt",quote=TRUE, sep=",", row.names=TRUE)
+write.table(Res_v, file="Res_v_2_1108.txt",quote=TRUE, sep=",", row.names=TRUE)
+write.table(Res_w, file="Res_w_2_1108.txt",quote=TRUE, sep=",", row.names=TRUE)
+
+
+### RESULT 3 ####
+
+DEBsurvfun <- function(m, Pars) { # Mass-Temp dependence of yearly Mortality 
+  sx <- function(m, Pars){ # natural baseline survival
+    exp(-3*m^-0.2*exp(EaS*(Pars[['T']]-T0)/(k*Pars[['T']]*T0))) #3*^-.288 is yearly mortality rate for 1 gram unit weight from Lorenzen 1996
+  } #conf limits Lorenzon 1996: 0.315, 0.261
+  Vsurvfun <- function(m, z=10.34){
+    sxV <- function(m, z=10.34){ # sx from Vindenes 2014
+      1/(1+exp(13.53316 - 0.50977*wtol_AYV(m) - (-0.00393)
+               *wtol_AYV(m)^2 - 0.19312*z - (-0.00679)
+               *wtol_AYV(m)*z))
+    }
+    xmax <- x[which(sxV(x) == max(sxV(x)))]
+    ifelse(m < xmax, sxV(m), sxV(xmax))
+  }
+  VsurvfunT <- function(m, Pars){
+    zT=10.34+Pars[["T"]]-287 # make 287 equal to 283 survival in Vindenes 2014 since 283 is yearly mean Temp 287 is summer mean temp
+    sxV <- function(m, z=zT){ # sx from Vindenes 2014
+      1/(1+exp(13.53316 - 0.50977*wtol_AYV(m) - (-0.00393)
+               *wtol_AYV(m)^2 - 0.19312*z - (-0.00679)
+               *wtol_AYV(m)*z))
+    }
+    xmax <- x[which(sxV(x) == max(sxV(x)))]
+    ifelse(m < xmax, sxV(m), sxV(xmax))
+  }
+  sx.firstyear <- function(m, Pars){ # first year survival
+    el_surv#*sx(ratefun(e_m,Pars)[round(sl/2),2,], Pars)
+  }
+  starvx <- function(m,Pars) { # starvation survival
+    starvS <- ratefun(m, Pars)[sl,2,]
+    ifelse(starvS < m | starvS > 18000, 0, 1)
+  }
+  ifelse(m < mmin, sx.firstyear(m,Pars), 0.67)# multiply with F (fishing mortality function)
+} 
+
+DEBparams <- as.data.frame(rbind(rho1,rho2,eps1,eps2,alpha,sl,T0,
+                                 k,cM,EaI,EaM,EaS,Td,EdI))
+IPMparams <- as.data.frame(rbind(mmin,mmax,n,dx,e_m,el_surv))
+meta <- rbind(DEBparams,IPMparams, kapfun=kap_fun(100))
+write.table(meta, file="Res_meta_3_1108.txt",quote=TRUE, sep=",", row.names=TRUE)
+
+T <- seq(283.5,294.5,0.25) # temperature range
+kappa <- seq(0.59,1,0.01) # kappa range
+Y <- 1 # feeding levels
+
+Res_lam <- matrix(ncol = 3+1, nrow = length(kappa)*length(T)*length(Y)) # assuming 40 here from files
+Res_v  <-  matrix(ncol = 3+n+1, nrow = length(kappa)*length(T)*length(Y)) # assuming 40 here from files
+Res_w  <-  matrix(ncol = 3+n+1, nrow = length(kappa)*length(T)*length(Y)) # assuming 40 here from files
+
+#length(Res_lam[,1])
+
+parsK <- as.matrix(expand.grid(T,kappa,Y))
+colnames(parsK) <- c("T","kappa","Y")
+
+for (i in 1:nrow(parsK)){
+  res <- wvlambda.projection(K.matrix(parsK[i,]))
+  Res_lam[i,] <- c(parsK[i,],res$lam) #c(T[d],kappa[e],Y[f], res$lambda)
+  Res_v[i,]   <- c(parsK[i,],res$v) #REPRODUCTIVE VALUES
+  Res_w[i,]   <- c(parsK[i,],res$w) #STABLE STRUCTURE
+}
+
+colnames(Res_lam) <- c("T","kappa","Y","Lambda")
+colnames(Res_v) <- c("T","kappa","Y","0",x)
+colnames(Res_w) <- c("T","kappa","Y","0",x)
+
+write.table(Res_lam, file="Res_lam_3_1108.txt",quote=TRUE, sep=",", row.names=TRUE)
+write.table(Res_v, file="Res_v_3_1108.txt",quote=TRUE, sep=",", row.names=TRUE)
+write.table(Res_w, file="Res_w_3_1108.txt",quote=TRUE, sep=",", row.names=TRUE)
+
+
