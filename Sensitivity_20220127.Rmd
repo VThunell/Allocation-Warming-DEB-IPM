@@ -2,7 +2,7 @@
 title: "DEBIPM - Sum of sensitivities"
 author: "Viktor Thunell"
 date: '2022-01-27'
-output: html_document
+output: pdf_document
 ---
 
 ```{r setup, include=FALSE}
@@ -11,9 +11,9 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ### Sensitivity of lambda to kappa - comparison of total and decomposed sensitivity
 
-A quick reminder: We do a sensitivity (perturbation) analysis across different temperatures to study which demographic processes, and the size at which they occur, affect how optimal energy allocation changes with warming. We analyze the partial contribution of each of o(T) (size at age 1), f(x,T) (fecundity) and g(y:x,T) (somatic growth) to sensitivity of $\lambda$ to changes in energy allocation (κ_0) at three different temperatures to understand how size dependent vital rates affects optimum.
+A quick reminder: We do a sensitivity (perturbation) analysis across different temperatures to study which demographic processes, and the size at which they occur, affect how optimal energy allocation changes with warming. We analyze the partial contribution of each of o(T) (size at age 1), f(x,T) (fecundity) and g(y:x,T) (somatic growth) to sensitivity of $\lambda$ to changes in energy allocation ($\kappa_0$) at three different temperatures to understand how size dependent vital rates affects optimum.
 
-In this document I compare the size specific and total sum of the sensitivity contributions from demographic functions calculated in this analysis (point 3 below) with the sensitivity of lambda to a perturbation of $\kappa_0$ )(point 1) and the sum of the size dependent sensitivity to a perturbation of the kernel matrix (point 2). This corresponds to a comparison of the first, third and last equality in
+Here, I compare the size specific and total sum of the sensitivity contributions from demographic functions calculated in this analysis (point 3 below) with the sensitivity of lambda to a perturbation of $\kappa_0$ (point 1) and the sum of the size dependent sensitivity to a perturbation of the kernel matrix (point 2). This corresponds to a comparison of the first, third and last equality in
 
 ```{=Latex}
 \begin{align}\label{sensitkappa}
@@ -100,7 +100,7 @@ Sens_Kmat <- outer(res_v, res_w, "*") * K_NumDer(0.00001, OptPars[1,])
 sum(apply(Sens_Kmat,1,sum))
 ```
 
-The total sum here (-0.04404539) is very close to the sensitivity of lambda to $\kappa_0$. I compare the size dependent sensitivity from these calculations to the summed demographic contributions in a plot in point below.
+The total sum here (-0.04404539) is very close to the sensitivity of lambda to $\kappa_0$. I compare the size dependent sensitivity from these calculations to the summed demographic contributions in plot 1, point 3 below.
 
 ### 3 - Contributions to size dependent sensitivity from demographic functions
 
@@ -145,16 +145,19 @@ I compare by plotting, the sum of the size dependnet sensitivity contributions f
 ```{r}
 # sum of contributions from demographic functions:
 plot(Sum_cont[Sum_cont$Temp==287,]$Size,Sum_cont[Sum_cont$Temp==287,]$sum.t, type = "l", col="red", main = "plot 1")
-# and the sensitivity from the kernel matrix:
-lines(x,Sens_Kmat[1,2:(n+1)]+apply(Sens_Kmat[2:(n+1),],1,sum), lty=2, lwd=2) # here I add the sensitivity contribution from fecundity (first row) to the rest of the sensitivity
+# and the sensitivity from the kernel matrix (here I add the sensitivity contribution from fecundity (first row) to the rest of the sensitivity):
+lines(x,Sens_Kmat[1,2:(n+1)]+apply(Sens_Kmat[2:(n+1),],1,sum), lty=2, lwd=2)
+legend("topright", c("Kernel matrix pert.", "Sum of df contrib."), lty = c(1,1), col = c("black", "red"))
 ```
 
-So I get the same results in my comparisons of both total and size dependent sensitivity with the dempgraphic function contributions to sensitivity. 
+
+So I get the same results in my comparisons of the demographic function contributions to sensitivity in both total (-0.04407772, -0.04404539, -0.04404539) and size dependent sensitivity (plot 1). 
 
 The deviation of the total sensitivity from zero could be due to that our optimum $\kappa_0$ is not exact. When I produce the model results, the values in the kappa range differ by 0.01, I guess that the optimum kappa used in the sensitivity analyses may not be precise enough to sum to zero.
 
 
-### 4 - Plot sensitivity contributions (figure 5  main text)
+### 4 - Resulting sensitivity contributions (figure 5 main text)
+
 ```{r, warning=FALSE}
 library(tidyverse) # gglot etc.
 
@@ -163,7 +166,7 @@ s_sum <- Res_Sens %>%
   group_by(dfun, Temp) %>%
   summarise(sum.c = sum(Sens, na.rm = TRUE)) #%>%
 
-s_sum_text <- data.frame(Size = c(1500,1500,1500,4000,4000,4000,6000,6000,6000), Sens = 0.075,
+s_sum_text <- data.frame(Size = c(2000,2000,2000,4500,4500,4500,7000,7000,7000), Sens = 0.075,
                          dfun = s_sum$dfun, Temp = s_sum$Temp, label = round(s_sum$sum.c,4))
 
 cont.labs <- c("Age 1 size", "Fecundity", "Growth")
