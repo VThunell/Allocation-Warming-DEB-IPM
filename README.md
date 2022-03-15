@@ -1,10 +1,13 @@
 # Temperature-DEBIPM
-R code for generating the size- and temperature depenendent DEB-IPM for co-authors. 
+R code for generating, running and plotting the size- and temperature dependent DEBIPM in Thunell et al. 20XX.
 
 ## Info on current repository content
 
-Despite the Branch name Cost-of-reproduction, this branch contains the new code for including a Size dependent kappa into the DEBIPM. For switching between size dependent and independent kappa, see function kap_fun(). When using the size indepedent kappa, the size scaling paramters of intake, should be reset (to eps1=0.64 and eps2=0.55).
+Rscript_DEBIPM_Model - DEB model describing size and temperature dependent energy accumulation and allocation to somatic growth and reproduction, functions for demographic functions in the IPM and the code for the derivatives for mass and temperature specific demographic functions with respect to kappa_0.
 
-To run and plot the model, download the content of the repository (green button that says Code, right and up). 
+Rscript_DEBIPM_RunModels - To run the DEBIPM to produce data for the main (1) and the two (2,3) contrasting survival rate models.
 
-The Thunell_DEBIPM_model_2021xxxx contains all functions and parameter values for running the model while Thunell_DEBIPM_plot_2021xxxx contains code for plotting the DEB, the IPM vital rate functions and the DEBIPM output (Kappa and temperature dependent long term population growth rate lambda, the population stable structure and reproductive output).
+Rscript_DEBIPM_Plot - Code for graphically exploring the model, calcultaing sensitivities and creating the figures (Fig. 1-5) in the main text.
+
+Supplement_DEBIPM_20220315 - Rmarkdown file for plots and text in Supplement
+

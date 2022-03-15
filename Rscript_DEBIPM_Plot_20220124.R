@@ -3,16 +3,16 @@
 #setwd("C:/Users/vitl0001/VThunell_repos/Temperature-DEBIPM")
 library(scales)
 library(patchwork) 
-library(grid)      # for viewport()
+library(grid)   # for viewport()
 
 # Colorscheme from blue to red scale_color_manual(values = c('#4575b4','#91bfdb','#e0f3f8','#fee090','#fc8d59','#d73027'))+
 
 ## Load in results for Main and Contrast results ####
 # Results Baseline scenario
-Res_lam_1 <- read.delim("//storage-og.slu.se/home$/vitl0001/My Documents/Manus2/Results/Results1108/Res_lam_1_1108.txt", sep = ",")
-Res_v_1 <- read.delim("//storage-og.slu.se/home$/vitl0001/My Documents/Manus2/Results/Results1108/Res_v_1_1108.txt", sep = ",")
+Res_lam_1 <- read.delim("//storage-og.slu.se/home$/vitl0001/My Documents/Manus2/Results/Results0224/Res_lam_1_2022-02-24.txt", sep = ",")
+Res_v_1 <- read.delim("//storage-og.slu.se/home$/vitl0001/My Documents/Manus2/Results/Results0224/Res_v_1_2022-02-24.txt", sep = ",")
 colnames(Res_v_1)[4:ncol(Res_v_1)] <- sub("X", "", colnames(Res_v_1)[4:ncol(Res_v_1)])
-Res_w_1 <- read.delim("//storage-og.slu.se/home$/vitl0001/My Documents/Manus2/Results/Results1108/Res_w_1_1108.txt", sep = ",")
+Res_w_1 <- read.delim("//storage-og.slu.se/home$/vitl0001/My Documents/Manus2/Results/Results0224/Res_w_1_2022-02-24.txt", sep = ",")
 colnames(Res_w_1)[4:ncol(Res_w_1)] <- sub("X", "", colnames(Res_w_1)[4:ncol(Res_w_1)])
 
 maxl_1 <- as.data.frame(Res_lam_1) %>% # get max lambda for each temperature 
@@ -21,20 +21,22 @@ maxl_1 <- as.data.frame(Res_lam_1) %>% # get max lambda for each temperature
 maxl_1["Sur_f"] <- "main_s"
 
 # Results for size-, but not temperature-dependent survival
-Res_lam_2 <- read.delim("//storage-og.slu.se/home$/vitl0001/My Documents/Manus2/Results/Results1108/Res_lam_2_1108.txt", sep = ",")
+Res_lam_2 <- read.delim("//storage-og.slu.se/home$/vitl0001/My Documents/Manus2/Results/Results0224/Res_lam_2_2022-02-24.txt", sep = ",")
 maxl_2 <- as.data.frame(Res_lam_2) %>% # get max lambda for each temperature
   group_by(T) %>%
   slice_max(Lambda)
 maxl_2["Sur_f"] <- "tind_s"
 
-# Results for contant survival (i.e. independent of size and temperature)
-Res_lam_3 <- read.delim("//storage-og.slu.se/home$/vitl0001/My Documents/Manus2/Results/Results1108/Res_lam_3_1108.txt", sep = ",")
+# Results for constant survival (i.e. independent of size and temperature)
+Res_lam_3 <- read.delim("//storage-og.slu.se/home$/vitl0001/My Documents/Manus2/Results/Results0224/Res_lam_3_2022-02-24.txt", sep = ",")
 maxl_3 <- as.data.frame(Res_lam_3) %>% # get max lambda fr each temperature
   group_by(T) %>%
   slice_max(Lambda)
 maxl_3["Sur_f"] <- "const_s"
 
 maxl_123 <- as_tibble(rbind(maxl_1,maxl_2,maxl_3))
+maxl_123$Sur_f <- factor(maxl_123$Sur_f, levels = c("main_s", "tind_s", "const_s"))
+
 
 ## Plot Mass and temperature functions ####
 
@@ -72,14 +74,14 @@ T_rates_long %>%
   theme_bw() +
   scale_colour_grey()
 
-### PLOT DEMOGRAPHIC FUNCTIONS FOR IPM (AND FIG. 3A-D)####  
+### PLOT DEMOGRAPHIC FUNCTIONS FOR IPM (AND FIG. 3A-D)####
 
-### Plot individual growth, DEBgrowthfun() ####
-plot(x,  DEBgrowthfun(14000, y=x, test_Pars)*dx, type="l", ylab="DEBgrowth(y;x)", 
+### Plot individual growth, g(m_s+1;m_s,T) via growthfun() ####
+plot(x,  growthfun(14000, y=x, test_Pars)*dx, type="l", ylab="growthfun(y;x)", 
      xlab="y", main = "Prob. density of DEBgrowth(x,y)")
-lines(x, DEBgrowthfun(10000, y=x, test_Pars)*dx, lty=2)
-lines(x, DEBgrowthfun(1000, y=x, test_Pars)*dx, lty=3)
-lines(x, DEBgrowthfun(100, y=x, test_Pars)*dx, lty=4) # values >~8100 are highly unlikley to grow into as y=x??
+lines(x, growthfun(10000, y=x, test_Pars)*dx, lty=2)
+lines(x, growthfun(1000, y=x, test_Pars)*dx, lty=3)
+lines(x, growthfun(100, y=x, test_Pars)*dx, lty=4) # values >~8100 are highly unlikley to grow into as y=x??
 legend("topright", c("14000","10000","1000","100"), lty=c(1,2,3,4), cex = 0.7, title="Mass x [g]")
 
 kappp = 0.8
@@ -88,9 +90,9 @@ t <- 25
 
 traj <- data.frame() 
  for(i in 1:length(Temp)){
-   traj[1,i] <- x[which.max(DEBage1.size(Pars = c(T = Temp[i], kappa = 0.8, Y = 1) ))]
+   traj[1,i] <- x[which.max(age1size(Pars = c(T = Temp[i], kappa = 0.8, Y = 1) ))]
     for(j in 2:t){ # 20 years of growth
-      traj[j,i] <- x[which.max(DEBgrowthfun(traj[j-1,i],Pars = c(T = Temp[i], kappa = 0.8, Y = 1)))]
+      traj[j,i] <- x[which.max(growthfun(traj[j-1,i],Pars = c(T = Temp[i], kappa = 0.8, Y = 1)))]
    }
  }
 colnames(traj) <- Temp[1:5]
@@ -109,13 +111,13 @@ groT <- ggplot(trajG) +
   scale_color_manual(values = c('#4575b4','#91bfdb','#fee090','#fc8d59','#d73027'), name="Temp [K]")+
   theme(legend.position="none")
 
-#### Plot size dependent fecundity, DEBrepfun() ####
+#### Plot size dependent fecundity, f(m_s,T) via repfun() ####
 rep=data.frame()
 for(i in 2:ncol(traj)){ # the temps, from 2nd to 6th column in traj
   for(j in 1:nrow(traj)){ # the sizes in traj, i.e. Age traj
     if(traj$Age[j]==1){
-      rep_tplus1 <- cbind(traj[j,i], DEBrepfun(e_m, c(T = Temp[i-1], kappa = kappp, Y = 1)), Temp[i-1], kappp, "Y"=1)} 
-    else{ rep_tplus1 <- cbind(traj[j,i], DEBrepfun(traj[j-1,i], c(T = Temp[i-1], kappa = kappp, Y = 1)), Temp[i-1], kappp, "Y"=1)}
+      rep_tplus1 <- cbind(traj[j,i], repfun(e_m, c(T = Temp[i-1], kappa = kappp, Y = 1)), Temp[i-1], kappp, "Y"=1)} 
+    else{ rep_tplus1 <- cbind(traj[j,i], repfun(traj[j-1,i], c(T = Temp[i-1], kappa = kappp, Y = 1)), Temp[i-1], kappp, "Y"=1)}
     colnames(rep_tplus1) <- c("mass","fec","Temp", "Kappa", "Y")
     rep <- rbind(rep, rep_tplus1)
   }
@@ -129,14 +131,14 @@ repT <- ggplot()+
   xlab(expression(paste("Mass ",italic("m")[s]," [g]"))) +
   theme_bw()
 
-#### Plot Age 1 size distribution, DEBage1.size() ####
+#### Plot Age 1 size distribution, o(e_m,T) via age1size() ####
 T_o <- NULL
 xT_o <- 1:500
 for(i in seq(285,293,2)){
   T_o_pars <- c(T = i,     # parameters for Temperature, feeding, allocation and Mass dependence
                  kappa = 0.8, # allocation to respiration (Growth and maintenance)
                  Y=1)         # Feeding level
-  T_o <- as.data.frame(rbind(T_o, c(T_o_pars, DEBage1.size(T_o_pars, y=xT_o))))
+  T_o <- as.data.frame(rbind(T_o, c(T_o_pars, age1size(T_o_pars, y=xT_o))))
 }
 colnames(T_o)[4:ncol(T_o)] <- xT_o
 T_o_long <- gather(T_o, key = "Size", value ="biom", c(4:ncol(T_o))) # not use column 
@@ -158,7 +160,7 @@ for(i in seq(285,293,2)){
   Tsur_pars <- c(T = i,     # parameters for Temperature, feeding, allocation and Mass dependence
                  kappa = test_Pars[["kappa"]], # allocation to respiration (Growth and maintenance)
                  Y=test_Pars[["Y"]])
-  Tsur <- as.data.frame(rbind(Tsur, c(Tsur_pars,DEBsurvfun(x, Tsur_pars))))
+  Tsur <- as.data.frame(rbind(Tsur, c(Tsur_pars,survfun(x, Tsur_pars))))
 }
 colnames(Tsur)[4:ncol(Tsur)] <- c(x)
 Tsur_long <- pivot_longer(Tsur, cols = c(4:ncol(Tsur)), names_to = "Size", values_to = "biom") # not use column 10 & 11 (eggstage and recruits)
@@ -176,33 +178,29 @@ surT <-
   theme(legend.position="none")
 
 ### FIG 3E,F - STABLE STRUCTURE W ####
-Kopt <- 
-  as_tibble(maxl_1) %>%
-  filter(T %in% c(287,289,291)) #%>%
-
 Res_w_1_long <- pivot_longer(as.data.frame(Res_w_1), cols = c(4:ncol(Res_w_1)), 
                            names_to = "Size", values_to ="biom") # not use column 4 & 5 (eggstage and recruits)
 
-Fig3a_1 <- Res_w_1_long %>%
+Fig3e_1 <- Res_w_1_long %>%
   filter(T %in% c(285, 287, 289, 291, 293)) %>%
   filter(as.character(kappa) %in% 0.8) %>% #Floating point issue when comparing vector, therefore the use of %in%, can also use near()
   ggplot(., aes(as.numeric(Size), biom, group = rev(as.factor(T)), color = as.factor(T))) +
   geom_line(size=0.8)+
   ylab("Stable structure w") +
   xlab(expression(paste("Mass ",italic("m"["s"])," [g]"))) +
-  ylim(0,4e-7)+
+  ylim(0,5e-7)+
   annotate(geom="text", -Inf, Inf, label="E", hjust = -21, vjust = 3, size= 4, fontface = "bold") +
   scale_color_manual(values = c('#4575b4','#91bfdb','#fee090','#fc8d59','#d73027'), name="Temp [K]")+
   theme_bw() +
   labs(color = "Temp [K]") +
   theme(legend.position="none")
 
-Fig3a_2 <- Res_w_1_long %>%
-  filter(T %in% c(285, 287, 289, 291,293)) %>%
+Fig3e_2 <- Res_w_1_long %>%
+  filter(T %in% c(285, 287, 289, 291, 293)) %>%
   filter(as.character(kappa) %in% 0.8) %>% #Floating point issue when comparing vector, therefore the use of %in%, can also use near()
   ggplot(., aes(as.numeric(Size), biom, group = rev(as.factor(T)), color = as.factor(T))) +
   geom_line(size=0.8)+
-  ylim(0,4e-5)+
+  ylim(0,5e-5)+
   scale_x_continuous(breaks = c(0,200,400), limits=c(0,400))+
   scale_color_manual(values = c('#4575b4','#91bfdb','#fee090','#fc8d59','#d73027'), name="Temp [K]")+
   theme_bw() +
@@ -211,20 +209,20 @@ Fig3a_2 <- Res_w_1_long %>%
         plot.background = element_rect(fill = "transparent", color = NA), # bg of the plot
         axis.title.y=element_blank())
 
-mycolors <- colorRampPalette(colors=c("white","#ce1256"))(9) ##ffffd4
-Fig3b <- 
+mycolors <- colorRampPalette(colors=c("white","#ce1256"))(9)
+Fig3f <- 
   as_tibble(Res_w_1_long) %>%
   filter(kappa %in% 0.8) %>%
-  mutate(biom_log=log(biom)) %>%
+  mutate(biom_log=log(biom)) %>% 
   ggplot(., aes(as.double(Size),T, z=biom_log, colour=biom_log))+
-  geom_contour_filled(breaks = c(min(log(Res_w_1_long$biom)), #-12
-                                 seq(-25,-15,length.out = 7),
-                                 max(log(Res_w_1_long$biom))))+ #-160
+  geom_contour_filled(breaks = c(min(log(Res_w_1_long$biom)), 
+                                 seq(log(1e-10),log(1e-7),length.out = 6),
+                                 max(log(Res_w_1_long$biom))))+ 
   annotate(geom="text", -Inf, Inf, label="F", hjust = -23, vjust = 3, size= 4, fontface = "bold")+
   scale_fill_manual(values = mycolors, name="Relative densities", 
-                    labels=c(paste("< ",signif(exp(-25),5)), 
-                             signif(seq(exp(-25),exp(-15),length.out = 6),5),
-                             paste(">",signif(max(Res_w_1_long$biom),5)))) + 
+                    labels=c(paste("< ",signif(1e-10,2)), 
+                             signif(seq(1e-10,1e-7,length.out = 5),2),
+                             paste(">",signif(max(Res_w_1_long$biom),2)))) + 
   scale_y_continuous(name = "Temperature [K]", limits = c(284,294),breaks = seq(285,293,2))+
   scale_x_continuous( name = expression(paste("Mass ",italic("m"["s"])," [g]")), limits = c(0,20000))+
   coord_cartesian(ylim = c(284,294)) +
@@ -232,10 +230,10 @@ Fig3b <-
   theme(panel.grid.major = element_blank(),
         panel.grid.minor = element_blank())
 
-### FIG 2 - SURFACE OF FITNESS OVER TEMP (x) AND KAPPA (y) ####
+### FIG 2 - SURFACE OF FITNESS OVER TEMP AND KAPPA ####
 Fig2 <- 
   as_tibble(Res_lam_1) %>%
-  filter(kappa > 0.66) %>%
+  filter(kappa > 0.69) %>%
   ggplot(., aes(T,kappa)) +
   geom_raster(aes(fill=round(Lambda, 4))) +
   geom_line(data=maxl_1,aes(T,kappa),size=0.85) +
@@ -247,26 +245,26 @@ Fig2 <-
     breaks = c(0,1,round(max(as.data.frame(Res_lam_1[,'Lambda'])), 2)),
     labels=c(0,1,round(max(as.data.frame(Res_lam_1[,'Lambda'])),3)),
     name = expression(lambda)) +
-  scale_x_continuous(expand = c(0,0), name = "Temperature [K]", breaks = seq(285,293,2), limits = c(284,294.25)) +
+  scale_x_continuous(expand = c(0,0), name = "Temperature [K]", breaks = seq(284,292,2), limits = c(283,293.5)) +
   scale_y_continuous(expand = c(0,0), name=expression(paste(kappa," (Growth allocation)"))) +
-  coord_cartesian(xlim = c(284.25,294)) +
+  coord_cartesian(xlim = c(283.5,292.5)) +
   theme_bw() +
   theme(panel.grid.major = element_blank(),
         panel.grid.minor = element_blank())
+
 
 ### FIG 4A - OPTIMAL KAPPA FOR THREE SURVIVAL SCENARIOS ####
 Fig4A <- 
 maxl_123 %>%
   ggplot(., aes(T,kappa, linetype = Sur_f)) +
-  geom_line(data=maxl_123, aes(T,kappa),size=0.85) +
+  geom_line(data=maxl_123, aes(T,kappa), size=0.85) +
   scale_x_continuous(expand = c(0,0), name = "Temperature [K]", breaks = seq(283,294,2), limits = c(284,294.25)) +
   scale_y_continuous(expand = c(0,0), name=expression(paste(kappa," (Growth allocation)")), limits = c(0.695,1.005))+
-  scale_linetype_manual(values = c("dashed","dotdash","solid"),
+  scale_linetype_manual(values = c("solid","dotdash","dashed"),
                         name= "Survival",
-                        labels = c("a=0.68",
-                                    expression(paste(italic("a"),"(",italic("m"["s"]),")")),
-                                    expression(paste(italic("a"),"(",italic("T,"),italic("m"["s"]),")"))),
-                        guide = guide_legend(reverse = TRUE) ) +
+                        labels = c(expression(paste(italic("a"),"(",italic("T,"),italic("m"["s"]),")")),
+                                   expression(paste(italic("a"),"(",italic("m"["s"]),")")),
+                                   "a=0.68")) +
   annotate(geom="text", -Inf, Inf, label="A", hjust = -2, vjust = 3, size= 4, fontface = "bold") +
   coord_cartesian(xlim = c(284.25,294)) +
   theme_bw() +
@@ -274,7 +272,7 @@ maxl_123 %>%
 
 ### FIG 4D,B AND C, THREE SURVIVAL SCENARIOS  ####
 # Baseline model survival 4D
-DEBsurvfun <- function(m, Pars) { # Mass-Temp dependence of yearly Mortality 
+survfun <- function(m, Pars) { # Mass-Temp dependence of yearly Mortality 
   Vsurvfun <- function(m, z=10.34){ # temperature independent survival function
     sxV <- function(m, z=10.34){ # sx from Vindenes 2014
       1/(1+exp(13.53316 - 0.50977*wtol(m) - (-0.00393)
@@ -301,15 +299,17 @@ DEBsurvfun <- function(m, Pars) { # Mass-Temp dependence of yearly Mortality
   #ifelse(m < mmin, sx.firstyear(m,Pars), Vsurvfun(m)) # temperature independent survival
   #ifelse(m < mmin, sx.firstyear(m,Pars), 0.68) # consant, i.e. size and temp INdepedent, survival
 } 
+
 Tsur <- NULL
 for(i in seq(285,293,2)){
   Tsur_pars <- c(T = i,     # parameters for Temperature, feeding, allocation and Mass dependence
                  kappa = test_Pars[["kappa"]], # allocation to respiration (Growth and maintenance)
                  Y=test_Pars[["Y"]])
-  Tsur <- as.data.frame(rbind(Tsur, c(Tsur_pars,DEBsurvfun(x, Tsur_pars))))
+  Tsur <- as.data.frame(rbind(Tsur, c(Tsur_pars,survfun(x, Tsur_pars))))
 }
 colnames(Tsur)[4:ncol(Tsur)] <- c(x)
 Tsur_long <- pivot_longer(Tsur, cols = c(4:ncol(Tsur)), names_to = "Size", values_to = "biom") # not use column 10 & 11 (eggstage and recruits)
+
 Fig4D <-
   Tsur_long %>%
   ggplot(., aes(as.numeric(Size), biom, color = as.factor(T))) +
@@ -323,7 +323,7 @@ Fig4D <-
   theme( legend.key.width = unit(1, 'cm') ) 
 
 # Temperature independent version of Vindenes et al. 2014
-DEBsurvfun <- function(m, Pars) { # Mass-Temp dependence of yearly Mortality 
+survfun <- function(m, Pars) { # Mass-Temp dependence of yearly Mortality 
   Vsurvfun <- function(m, z=10.34){ # temperature independent survival function
     sxV <- function(m, z=10.34){ # sx from Vindenes 2014
       1/(1+exp(13.53316 - 0.50977*wtol(m) - (-0.00393)
@@ -350,12 +350,13 @@ DEBsurvfun <- function(m, Pars) { # Mass-Temp dependence of yearly Mortality
   ifelse(m < mmin, sx.firstyear(m,Pars), Vsurvfun(m)) # temperature independent survival
   #ifelse(m < mmin, sx.firstyear(m,Pars), 0.68) # consant, i.e. size and temp INdepedent, survival
 }
+
 Tsur <- NULL
 for(i in seq(285,293,2)){
   Tsur_pars <- c(T = i,     # parameters for Temperature, feeding, allocation and Mass dependence
                  kappa = test_Pars[["kappa"]], # allocation to respiration (Growth and maintenance)
                  Y=test_Pars[["Y"]])
-  Tsur <- as.data.frame(rbind(Tsur, c(Tsur_pars,DEBsurvfun(x, Tsur_pars))))
+  Tsur <- as.data.frame(rbind(Tsur, c(Tsur_pars,survfun(x, Tsur_pars))))
 }
 colnames(Tsur)[4:ncol(Tsur)] <- c(x)
 
@@ -363,9 +364,7 @@ Tsur_long <- pivot_longer(Tsur, cols = c(4:ncol(Tsur)), names_to = "Size", value
 Fig4B <-
   Tsur_long %>%
   ggplot(., aes(as.numeric(Size), biom, color = as.factor(T))) +
-  #geom_line(size=0.85, linetype= "longdash") +
   geom_line(size=0.85, linetype= "dotdash") +
-  #geom_line(size=0.85, linetype= "dotdash") +
   ylab(expression(paste(italic("a"),"(",italic("m"["s"]),")"))) +
   xlab(expression(paste("Mass ",italic("m"["s"])," [g]"))) +
   annotate(geom="text", -Inf, Inf, label="B", hjust = -1.5, vjust = 2.5, size= 4, fontface = "bold") +
@@ -376,7 +375,7 @@ Fig4B <-
     legend.key.width = unit(1, 'cm') )
 
 # Constant survival (0.68)
-DEBsurvfun <- function(m, Pars) { # Mass-Temp dependence of yearly Mortality 
+survfun <- function(m, Pars) { # Mass-Temp dependence of yearly Mortality 
   Vsurvfun <- function(m, z=10.34){ # temperature independent survival function
     sxV <- function(m, z=10.34){ # sx from Vindenes 2014
       1/(1+exp(13.53316 - 0.50977*wtol(m) - (-0.00393)
@@ -409,7 +408,7 @@ for(i in seq(285,293,2)){
   Tsur_pars <- c(T = i,     # parameters for Temperature, feeding, allocation and Mass dependence
                  kappa = test_Pars[["kappa"]], # allocation to respiration (Growth and maintenance)
                  Y=test_Pars[["Y"]])
-  Tsur <- as.data.frame(rbind(Tsur, c(Tsur_pars,DEBsurvfun(x, Tsur_pars))))
+  Tsur <- as.data.frame(rbind(Tsur, c(Tsur_pars,survfun(x, Tsur_pars))))
 }
 colnames(Tsur)[4:ncol(Tsur)] <- c(x)
 Tsur_long <- pivot_longer(Tsur, cols = c(4:ncol(Tsur)), names_to = "Size", values_to = "biom") # not use column 10 & 11 (eggstage and recruits)
@@ -428,7 +427,7 @@ Fig4C <-
     legend.key.width = unit(1, 'cm')) 
 
 # define main model survfun again for use in further calculations
-DEBsurvfun <- function(m, Pars) { # Mass-Temp dependence of yearly Mortality 
+survfun <- function(m, Pars) { # Mass-Temp dependence of yearly Mortality 
   Vsurvfun <- function(m, z=10.34){ # temperature independent survival function
     sxV <- function(m, z=10.34){ # sx from Vindenes 2014
       1/(1+exp(13.53316 - 0.50977*wtol(m) - (-0.00393)
@@ -470,13 +469,13 @@ for (i in 1:nrow(OptPars)){
   
   Gr_cont <- bind_cols(Size=x, Temp=OptPars[i,1], kappa=OptPars[i,2], 
                        dfun="Gr", outer(res_v[2:(n+1)], res_w[2:(n+1)], "*") 
-                       * t(DEBsurvfun(x, OptPars[i,]) * t(G_NumDer(h=0.00001, x, OptPars[i,])))*dx)
+                       * t(survfun(x, OptPars[i,]) * t(G_NumDer(h=0.00001, x, OptPars[i,])))*dx)
   Gr_cont["Sens"] <- apply(Gr_cont[5:ncol(Gr_cont)],1,FUN=sum)# sum the distribution y to get sensitivity for each size 
   Gr_cont<-Gr_cont[,c(1:4,ncol(Gr_cont))]
   
   F_cont  <- bind_cols(Size=x, Temp=OptPars[i,1], kappa=OptPars[i,2],
                        dfun="F",  Sens=res_v[1]*res_w[2:(n+1)] 
-                       * DEBsurvfun(x, OptPars[i,]) * F_NumDer(h=0.00001, x, OptPars[i,]))
+                       * survfun(x, OptPars[i,]) * F_NumDer(h=0.00001, x, OptPars[i,]))
   
   A1_cont <- bind_cols(Size=x, Temp=OptPars[i,1], kappa=OptPars[i,2], 
                        dfun="A1", Sens=res_v[2:(n+1)]*res_w[1] 
@@ -498,7 +497,7 @@ s_sum <- Res_Sens %>%
 s_sum_text <- data.frame(Size = c(2000,2000,2000,4500,4500,4500,7000,7000,7000), Sens = 0.075,
                       dfun = s_sum$dfun, Temp = s_sum$Temp, label = round(s_sum$sum.c,3))
 
-# create plot
+# create Fig 5
 Fig5 <-
   Res_Sens %>%
   mutate(dfun=as.factor(dfun)) %>%
@@ -509,14 +508,14 @@ Fig5 <-
   geom_vline(xintercept=400, linetype="dashed", size=0.3) +
   ylab("Sensitivity") +
   xlab("Mass [g]") +
-  scale_color_grey(labels= cont.labs, name= "",) +
+  scale_color_grey(labels= cont.labs, name= "") +
+  scale_linetype_discrete(labels= cont.labs, name= "") +
   geom_text(data=s_sum_text, aes(Size, Sens, label = label, 
                               colour=dfun), size=4, show.legend = FALSE) +
   theme_bw() +
   theme(panel.background = element_rect(fill = "white", colour = "black"),
         strip.background = element_blank(),
         panel.border = element_rect(colour = "black", fill = NA))
-
 
 #### Write plots to pdf:s ####
 # date <- Sys.Date()
@@ -526,13 +525,13 @@ Fig5 <-
 # 
 # pdf(paste("DEBIPM_fig3_",date,".pdf", sep=""), width = 8, height = 8)
 # subvp <- viewport(width = 0.19, height = 0.18, x = 0.26, y = 0.20)
-# (groT + repT) / (surT + oT) / (Fig3a_1+Fig3b) #/ (d_1+d_2)
-# print(Fig3a_2, vp = subvp)
+# (groT + repT) / (surT + oT) / (Fig3e_1+Fig3f) #/ (d_1+d_2)
+# print(Fig3e_2, vp = subvp)
 # dev.off()
 # 
 # pdf(paste("DEBIPM_fig4_",date,".pdf", sep=""), width = 10, height = 6)
-# Fig4A / (Fig4B+Fig4C+Fig4D)
-# dev.off()
+#  Fig4A / (Fig4B+Fig4C+Fig4D)
+#  dev.off()
 # 
 # pdf(paste("DEBIPM_fig5_",date,".pdf", sep=""), width = 8, height = 6)
 # Fig5

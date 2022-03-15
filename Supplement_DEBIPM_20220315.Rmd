@@ -1,6 +1,6 @@
 ---
 title: |
-  | Supporting Information for
+  | Supplement to
   |
   | Optimal energy allocation to growth and reproduction driven by size dependent physiological and demographic responses to warming
   |
@@ -22,11 +22,11 @@ S2. Comparison of modeled growth, reproduction (Fecundity) with data from Winder
 
 S3.  Effect of number of size classes ($n$) on long-term population growth rate ($\lambda$) and stable population size structure ($w$).
 
-S4. Sensitivity analysis of lambda to k_0: Methods and analytical expression for derivatives of demographic functions to $\kappa_0$.
+S4. Sensitivity analysis of lambda to $\kappa_0$: Methods and analytical expression for derivatives of demographic functions to $\kappa_0$.
 
-S5. Growth trajectories and fecundity at for optimal allocation (kappa_0*)
+S5. Growth trajectories and fecundity at for optimal allocation ($\kappa_0^*$.)
 
-S6. Fitness landscape & stable size structure for contrasting survival scenarios
+S6. Fitness landscape & stable size structure for survival rate contrasts
 
 \newpage
 
@@ -34,10 +34,10 @@ S6. Fitness landscape & stable size structure for contrasting survival scenarios
 
 ### S1.1. Effects of mass and temperature on maintenance and consumption 
 
-The effects of mass and temperature on maintenance and consumption in combination with mass dependent allocation determines somatic growth and reproductive reserve in the DEBIPM (Fig S1.1). In the DEB, the effect of mass on maintenance and consumption is modeled using a power function (Fig S1.1A), the interacting effects of temperature and mass (equation 3, main text) on maintenance rate is exponential (Fig S1.1B) and the effect of temperature on consumption rate is exponential and unimodal (Fig S1.1B, solid line). We consider allocation to reproductive reserve hyper-allometric (or supra-linear with mass) meaning that kappa (modeled as a function of mass, k(m)) decreases with mass (Fig. S1.1C). The resulting DEB, which includes assimilation efficiency (alpha=0.4), thus describes the proportion of consumed energy that each compartment use up (Fig S1.1D).
+The effects of mass and temperature on maintenance and consumption in combination with mass dependent allocation determines somatic growth and reproductive reserve in the DEBIPM (Fig S1.1). In the DEB, the effect of mass on maintenance and consumption is modeled using a power function (Fig S1.1A), the interacting effects of temperature and mass (equation 3, main text) on maintenance rate is exponential (Fig S1.1B) and the effect of temperature on consumption rate is exponential and unimodal (Fig S1.1B, solid line). We consider allocation to reproductive reserve to increase with mass according to data (nearly linearly, see S2) and not with consumption rate (which is sub-linear) meaning that kappa (modeled as a function of mass, k(m)) decreases with mass (Fig. S1.1C). The resulting DEB, which includes assimilation efficiency ($\alpha =0.4$), thus describes the proportion of consumed energy that each compartment use up (Fig S1.1D).
 
 ```{r, echo = FALSE, warning = FALSE}
-test_Pars <- c(T = 287,     # Temperature
+test_Pars <- c(T = 287,   # Temperature
              kappa = 0.8, # allocation to Growth and maintenance
              Y = 1)       # Feeding level
 
@@ -165,7 +165,7 @@ Figure S1.2. Energy allocation rate to reproductive reserve (dashed lines) and g
 
 ## S2. Comparison of modelled growth and reproduction (Fecundity) with data on Windermere pike
 
-We adjust the parameter values of mass dependent consumption and allocation in the DEB model to fit data on the observed growth and fecundity of Windermere pike (see main text for details). Figure S2 shows how our estimates compare with growth mean (growth trajectories, Fig. S2A) and variance (Fig. S2B) and reproduction (S2C, estimated fecundity in October?) with data
+We adjust the parameter values of mass dependent consumption and allocation in the DEB model to fit data on the observed growth and fecundity of Windermere pike (see main text for details). Figure S2 shows how our estimates compare with growth mean (growth trajectories, Fig. S2A) and variance (Fig. S2B) and reproduction (S2C, fecundity  October-December) with data
 
 ```{r echo=FALSE, warning=FALSE}
 # rlnorm(1, log(traj_Supp[[2,3]]), log(traj_Supp[[3,3]])) 
@@ -228,9 +228,9 @@ repTW <- ggplot()+
 
 a <- data.frame() # 10 individual growth traj, 20+1 years of growth
 for(i in 1:10){ 
-  a[i,1] <- mean(sample(x = x, size = 1 , replace = TRUE, prob = DEBage1.size(test_Pars)))  
+  a[i,1] <- mean(sample(x = x, size = 1 , replace = TRUE, prob = age1size(test_Pars)))  
     for(j in 2:20){ # 20 years of growth
-      a[i,j] <- mean(sample(x = x, size = 1 , replace = TRUE, prob = DEBgrowthfun(a[i,j-1],test_Pars)))
+      a[i,j] <- mean(sample(x = x, size = 1 , replace = TRUE, prob = growthfun(a[i,j-1],test_Pars)))
   }
 }
 ranTraj <- bind_cols(age=1:20,t(a))
@@ -249,7 +249,7 @@ ranT <- ggplot() +
 
 ```
 
-Figure S2. Comparison of DEBIPM and data on Windermere pike (black points in A and B and lines in C). Effects of size and temperature on demographic functions in the DEBIPM for $k_0$=0.8 (i.e. 80 % of daily assimilated energy is allocated to growth and maintenance): mean size at age (A) and size specific fecundity (eggs produced in year s+1 by individuals of size  $m_s$ in year s) (B). Growth trajectories in C are based on individual back calculated growth from wing bones from Windermere (black) and 10 random growth trajectories produced by the DEBIPM at 287 K (blue).
+Figure S2. Comparison of DEBIPM and data on Windermere pike (black points in A and B and lines in C). Effects of size and temperature on demographic functions in the DEBIPM for $\kappa_0=0.8$ (i.e. 80 % of daily assimilated energy is allocated to growth and maintenance): mean size at age (A) and size specific fecundity (eggs produced in year s+1 by individuals of size  $m_s$ in year s) (B). Growth trajectories in C are based on individual back calculated growth from wing bones from Windermere (black) and 10 random growth trajectories produced by the DEBIPM at 287 K (blue).
 
 \newpage
 
@@ -274,28 +274,28 @@ When analyzing the IPM, the number of size classes in the ($n$, or matrix mesh s
 #  }
 # colnames(nlam) <- c("n","lambda")
 # colnames(nwlam) <- c("n","x","w")
-# 
-# nW <-
-#   as_tibble(nwlam) %>%
-#   filter(n %in% c(seq(min(n),max(n), by=400))) %>%
-# ggplot(., aes(x,w, color=as.factor(n))) +
-#   geom_line() +
-#   xlab(expression(paste("Mass ",italic("m"["s"])," [g]"))) +
-#   xlim(0,2500) +
-#   ylim(0,4e-05) +
-#   scale_color_discrete(name = expression(paste("# size classes (", italic(n), ")"))) +
-#   ylab("Stable structure w") +
-#   theme_bw()
-#   
-# nL <-
-# as_tibble(nlam) %>%
-#   ggplot(., aes(nlam$n,lambda)) +
-#   geom_line() +
-#   ylab(expression(paste(italic(lambda)))) +
-#   xlim(400,NA) +
-#   ylim(1.072,1.081) +
-#   xlab(expression(paste("# size classes (", italic(n), ")"))) +
-#   theme_bw()
+
+nW <-
+  as_tibble(nwlam) %>%
+  filter(n %in% c(seq(min(n),max(n), by=400))) %>%
+ggplot(., aes(x,w, color=as.factor(n))) +
+  geom_line() +
+  xlab(expression(paste("Mass ",italic("m"["s"])," [g]"))) +
+  xlim(0,2500) +
+  ylim(0,4e-05) +
+  scale_color_discrete(name = expression(paste("# size classes (", italic(n), ")"))) +
+  ylab("Stable structure w") +
+  theme_bw()
+
+nL <-
+as_tibble(nlam) %>%
+  ggplot(., aes(nlam$n,lambda)) +
+  geom_line() +
+  ylab(expression(paste(italic(lambda)))) +
+  xlim(400,NA) +
+  ylim(1.05,1.1) +
+  xlab(expression(paste("# size classes (", italic(n), ")"))) +
+  theme_bw()
 
 nL / nW
 
@@ -308,11 +308,11 @@ Figure S3. Effect of number of size classes ($n$) on long-term population growth
 
 \newpage
 
-## S4. Sensitivity of the DEBIPM: Methods and analytical expression for derivatives of demographic functions to k_0.
+## S4. Sensitivity of the DEBIPM: Methods and analytical expression for derivatives of demographic functions to $\kappa_0$.
 
 ### Methodological approach
 
-Our sensitivity analysis aims to explaining how $\kappa_0$ is optimized at different temperatures, i.e. how the 'configuration' of vital rates at optimal values of $\kappa$ may shift with temperatures. To this end we decompose the sensitivity of $\lambda$ into the respective size dependent sensitivity contribution from the demographic functions for age 1 size, somatic growth and fecundity at three temperatures (287, 289, 291 K). We use the chain rule of derivation based on numerical approximations of the derivatives for mass and temperature specific demographic functions with respect to $\kappa_0$. We use numerical approximation as the integrals in the DEB (that approximates the energy budget and consecutive growth and fecundity) are also numerical approximations. Below, we however present analytical expressions for the sensitivity.
+Our sensitivity analysis aims to explaining how $\kappa_0$ is optimized at different temperatures, i.e. how the 'configuration' of demographic functions at optimal values of $\kappa$ may shift with temperatures. To this end we decompose the sensitivity of $\lambda$ into the respective size dependent sensitivity contribution from the demographic functions for age 1 size, somatic growth and fecundity at three temperatures (287, 289, 291 K). We use the chain rule of derivation based on numerical approximations of the derivatives for mass and temperature specific demographic functions with respect to $\kappa_0$. We use numerical approximation as the integrals in the DEB (that approximates the energy budget and consecutive growth and fecundity) are also numerical approximations. However, we also present analytical expressions for the sensitivity.
 
 ### Notation when deriving sensitivity
 
@@ -328,7 +328,7 @@ To describe the this approach, we here use a simplified matrix notation instead 
 \end{align}
 ```
 
-As all eggs transition to 1-year olds (or die) next year, the upper left element of the matrix is zero. The other parts of the matrix are defined by the DEBIPM, the discretized version assumes the model consists of $n+1$ stages, where the first stage is the egg stage and the last stages from 2 to $n+1$ are size stages. The term $g_{ij}$ is the probability of transitioning from size stage $j$ to size stage $i$ and are determined by the underlying DEB-function $g(y,x)$. The  projection matrix is then given by
+As all eggs transition to 1-year olds (or die) next year, the upper left element of the matrix is zero. The other parts of the matrix are defined by the DEBIPM, the discretized version assumes the model consists of $n+1$ stages, where the first stage is the egg stage and the last stages from 2 to $n+1$ are size stages. The term $g_{ij}$ is the probability of transitioning from size stage $j$ to size stage $i$ and are determined by the underlying DEB-function $g(m_{s+1};m_s,T)$. The  projection matrix is then given by
 
 ```{=Latex}
 \begin{align}\label{Kmat2}
@@ -342,13 +342,13 @@ a_1g_{n+1,1}&g_{n+1,2}a_2&\cdots & g_{n+1,n+1}a_{n+1} \\
 \end{align}
 ```
 
-Here, $g_{i1}$ is the probability that a surviving egg grows to stage $i$ at age 1 (determined by $o_y(y)$ in the DEB-models) and is thus calculated differently from  $g_{ij}$ for $j>1$. However, they both represent the same transition process (growth transitions) and have the same symbol here $g_{ij}$. Similarly, $a_j$ is survival probability, given by the parameter $el_{surv}$ for $j=1$ and calculated by the $a(m_s, T)$ function for $j>1$.
+Here, $g_{i1}$ is the probability that a surviving egg grows to stage $i$ at age 1 (determined by $o(m_{s+1},T)$ in the DEB-models) and is thus calculated differently from  $g_{ij}$ for $j>1$. However, they both represent the same transition process (growth transitions) and have the same symbol here $g_{ij}$. Similarly, $a_j$ is survival probability, given by the parameter $o_{surv}$ for $j=1$ and calculated by the $a(m_s, T)$ function for $j>1$.
 
 The $\kappa_0$ parameter affects growth $g_{ij}$ and fecundity $f_j$ in stage $j$, while survival $a_j$ is not dependent on this parameter. 
 
-#### Sensitivity analysis
+### Sensitivity analysis
 
-##### Decomposition of sensitivity of $\lambda$ to $\kappa_0$} 
+#### Decomposition of sensitivity of $\lambda$ to $\kappa_0$
 
 Using this projection matrix $\mathbf{K}$ we can decompose the sensitivity $\frac{d \lambda}{d\kappa_0}$ (which should be zero at the optimum),  into contributions from the different vital rates across different stages.  Applying the chain rule (and the fact that $\frac{d \lambda}{dK_{ij}}=v_iw_j$), we get
 
@@ -366,7 +366,7 @@ This decomposition requires the three sensitivities  $\frac{df_j}{d\kappa_0}$ ($
 
 ### Analytical expression for $\frac{dg_{ij}}{d\kappa_0}$
 
-The growth function $g(y;x)$ is assumed to be a lognormal distribution, where in our case the mean $\mu=\mu(m)$ depends on $\kappa_0$ (mean defined on the absolute scale) and the standard deviation $\sigma$ depends on the mean (and thereby also on $\kappa_0$), $\sigma^2(\mu)=\beta^2 e^{-2\nu \mu}$.  Note that in the above derivations $g_{ij}$ is the discretized version of this function, where for a given bin size $dy$ we get  $g_{ij}=g(y,m)dy/\int g(y,m)dy$ (and $\sum_i g_{ij}=1$). 
+The growth function $g(m_{s+1};m_s,T)$ is assumed to be a lognormal distribution, where in our case the mean $\mu=\mu(m)$ depends on $\kappa_0$ (mean defined on the absolute scale) and the standard deviation $\sigma$ depends on the mean (and thereby also on $\kappa_0$), $\sigma^2(\mu)=\beta^2 e^{-2\nu \mu}$.  Note that in the above derivations $g_{ij}$ is the discretized version of this function, where for a given bin size $dy$ we get  $g_{ij}=g(m_{s+1};m_s,T)dy/\int g(m_{s+1};m_s,T)dy$ (and $\sum_i g_{ij}=1$). 
 
 To simplify calculations, we can define the following function $h(\mu)$ and its derivative:
 
@@ -381,13 +381,13 @@ For this model we can write the lognormal distribution as a function of $\mu=\mu
 
 ```{=Latex}
 \begin{align}\label{lognormal2}
-g(y,\mu) &=\frac{1}{y}\left[2\pi\ln\left(1+\frac{\sigma^2}{\mu^2}\right)\right]^{-\frac{1}{2}}\exp\left(-\frac{\left[\ln y-\ln\left(\mu\left[1+\frac{\sigma^2}{\mu^2}\right]^{-\frac{1}{2}}\right)\right]^2}{2\ln\left(1+\frac{\sigma^2}{\mu^2}\right)}\right)\\
-&=\frac{1}{y}\left[2\pi\ln h(\mu) \right]^{-\frac{1}{2}}\exp\left(-\frac{\left[\ln y-\ln\left(\mu\left[h(\mu)\right]^{-\frac{1}{2}}\right)\right]^2}{2\ln h(\mu) }\right)\\
-&=\frac{1}{y}g_a(\mu)\exp\left(-\frac{g_b(\mu)}{g_c(\mu)}\right),
+g(m_{s+1},\mu) &=\frac{1}{m_{s+1}}\left[2\pi\ln\left(1+\frac{\sigma^2}{\mu^2}\right)\right]^{-\frac{1}{2}}\exp\left(-\frac{\left[\ln m_{s+1}-\ln\left(\mu\left[1+\frac{\sigma^2}{\mu^2}\right]^{-\frac{1}{2}}\right)\right]^2}{2\ln\left(1+\frac{\sigma^2}{\mu^2}\right)}\right)\\
+&=\frac{1}{m_{s+1}}\left[2\pi\ln h(\mu) \right]^{-\frac{1}{2}}\exp\left(-\frac{\left[\ln m_{s+1}-\ln\left(\mu\left[h(\mu)\right]^{-\frac{1}{2}}\right)\right]^2}{2\ln h(\mu) }\right)\\
+&=\frac{1}{m_{s+1}}g_a(\mu)\exp\left(-\frac{g_b(\mu)}{g_c(\mu)}\right),
 \end{align}
 ```
 
-where $g_a(\mu)=\left[2\pi\ln h(\mu) \right]^{-\frac{1}{2}}$, $g_b(\mu)=\left[\ln y-\ln\left(\mu\left[h(\mu)\right]^{-\frac{1}{2}}\right)\right]^2$, and $g_c(\mu)= 2\ln h(\mu)$.  The derivatives of these are
+where $g_a(\mu)=\left[2\pi\ln h(\mu) \right]^{-\frac{1}{2}}$, $g_b(\mu)=\left[\ln m_{s+1}-\ln\left(\mu\left[h(\mu)\right]^{-\frac{1}{2}}\right)\right]^2$, and $g_c(\mu)= 2\ln h(\mu)$.  The derivatives of these are
 
 ```{=Latex}
 \begin{align*}
@@ -397,8 +397,8 @@ g_a'(\mu)&=-\frac{1}{2}\left[2\pi\ln h(\mu) \right]^{-\frac{3}{2}}2\pi[h(\mu)]^{
 
 ```{=Latex}
 \begin{align*}
-g_b'(\mu)&= 2\left[\ln y-\ln\left(\mu\left[h(\mu)\right]^{-\frac{1}{2}}\right)\right]\frac{-1}{\mu\left[h(\mu)\right]^{-\frac{1}{2}}}\left[\left[h(\mu)\right]^{-\frac{1}{2}}-\frac{\mu}{2}\left[h(\mu)\right]^{-\frac{3}{2}}h'(\mu)\right]\\
-&= 2\left[\ln y-\ln\left(\mu\left[h(\mu)\right]^{-\frac{1}{2}}\right)\right]\left[ \frac{h'(\mu)}{2h(\mu)}-\frac{1}{\mu}\right],
+g_b'(\mu)&= 2\left[\ln m_{s+1}-\ln\left(\mu\left[h(\mu)\right]^{-\frac{1}{2}}\right)\right]\frac{-1}{\mu\left[h(\mu)\right]^{-\frac{1}{2}}}\left[\left[h(\mu)\right]^{-\frac{1}{2}}-\frac{\mu}{2}\left[h(\mu)\right]^{-\frac{3}{2}}h'(\mu)\right]\\
+&= 2\left[\ln m_{s+1}-\ln\left(\mu\left[h(\mu)\right]^{-\frac{1}{2}}\right)\right]\left[ \frac{h'(\mu)}{2h(\mu)}-\frac{1}{\mu}\right],
 \end{align*}
 ```
 
@@ -410,11 +410,11 @@ g_c'(\mu)&= \frac{2h'(\mu)}{h(\mu)}.
 \end{align*}
 ```
 
-Using the chain rule, the derivative of $g(y,\mu)$ with respect to $\kappa_0$  is given by
+Using the chain rule, the derivative of $g(m_{s+1},\mu)$ with respect to $\kappa_0$  is given by
 
 ```{=Latex}
 \begin{align}\label{dG.dkappa2}
-\frac{d g(y,\mu )}{d \kappa_0}&=\frac{d g(y,\mu)}{d \mu}\frac{d \mu}{d \kappa_0}
+\frac{d g(m_{s+1},\mu )}{d \kappa_0}&=\frac{d g(m_{s+1},\mu)}{d \mu}\frac{d \mu}{d \kappa_0}
 \end{align}
 ```
 
@@ -422,7 +422,7 @@ The first term is given by
 
 ```{=Latex}
 \begin{align}\label{dg.dmug2}
-\frac{d g(y,\mu;\sigma)}{d\mu} &=\frac{1}{y}g'_a(\mu)\exp\left(-\frac{g_b(\mu)}{g_c(\mu)}\right)+\frac{1}{y}g_a(\mu)\exp\left(-\frac{g_b(\mu)}{g_c(\mu)}\right)\left(\frac{-g_b'(\mu)g_c(\mu)+g_c'(\mu)g_b(\mu)}{g_b(\mu)^2}\right). 
+\frac{d g(m_{s+1},\mu;\sigma)}{d\mu} &=\frac{1}{m_{s+1}}g'_a(\mu)\exp\left(-\frac{g_b(\mu)}{g_c(\mu)}\right)+\frac{1}{m_{s+1}}g_a(\mu)\exp\left(-\frac{g_b(\mu)}{g_c(\mu)}\right)\left(\frac{-g_b'(\mu)g_c(\mu)+g_c'(\mu)g_b(\mu)}{g_b(\mu)^2}\right). 
 \end{align}
 ```
 
@@ -430,8 +430,8 @@ This can be found by plugging in the expressions defined above. The second term 
 
 ```{=Latex}
 \begin{align}\label{dmu.dkappa2}
-\frac{d \mu}{d\kappa_0} &=\frac{d}{d\kappa_0}\int_0^{t_l}[\kappa_0e^{-\frac{m}{20000\kappa_m}}\alpha Y C(m,T)-M(m,T)]dt\\
-&=\int_0^{t_l}\alpha Y C(m,T)e^{-\frac{m}{18000\kappa_m}}dt.
+\frac{d \mu}{d\kappa_0} &=\frac{d}{d\kappa_0}\int_0^{t_l}[\kappa_0e^{-\frac{m}{20000\kappa_m}}\alpha C(m,T)-M(m,T)]dt\\
+&=\int_0^{t_l}\alpha C(m,T)e^{-\frac{m}{18000\kappa_m}}dt.
 \end{align}
 ```
 
@@ -442,8 +442,8 @@ The distribution of size at age 1 follows a lognormal distribution similar to \e
 
 ```{=Latex}
 \begin{align}\label{dmu.dkappa2}
-\frac{d \mu(x)}{d\kappa_0} &=\frac{d}{d\kappa_0}\int_0^{t_l/2}[\kappa_0e^{-\frac{m}{18000\kappa_m}}\alpha Y C(m,T)-M(m,T)]dt\\
-&=\int_0^{t_l/2}\alpha Y C(m,T)e^{-\frac{m}{18000\kappa_m}}dt.
+\frac{d \mu(m_s)}{d\kappa_0} &=\frac{d}{d\kappa_0}\int_0^{t_l/2}[\kappa_0e^{-\frac{m}{18000\kappa_m}}\alpha C(m,T)-M(m,T)]dt\\
+&=\int_0^{t_l/2}\alpha C(m,T)e^{-\frac{m}{18000\kappa_m}}dt.
 \end{align}
 ```
 
@@ -455,7 +455,7 @@ Fecundity is given by (assuming enough energy available for reproduction)
 
 ```{=Latex}
 \begin{align}\label{fecundity}
-f(x,T)&=\frac{1}{2e_m}\int_0^{t_l}\frac{dR}{dt}dt=\frac{1}{2e_m}\int_0^{t_l}(1-\kappa_0e^{-\frac{m}{18000\kappa_m}}\alpha Y C(m,T))dt.
+f(m_s,T)&=\frac{1}{2e_m}\int_0^{t_l}\frac{dR}{dt}dt=\frac{1}{2e_m}\int_0^{t_l}(1-\kappa_0e^{-\frac{m}{18000\kappa_m}}\alpha C(m,T))dt.
 \end{align}
 ```
 
@@ -463,7 +463,7 @@ The sensitivity with respect to $\kappa_0$ is thus given by
 
 ```{=Latex}
 \begin{align}\label{fecundity}
-\frac{df(x,T)}{d\kappa_0}&= -\frac{1}{2e_m}\int_0^{t_l}e^{-\frac{m}{20000\kappa_m}}\alpha Y C(m,T))dt.
+\frac{df(m_s,T)}{d\kappa_0}&= -\frac{1}{2e_m}\int_0^{t_l}e^{-\frac{m}{20000\kappa_m}}\alpha C(m,T))dt.
 \end{align}
 ```
 
@@ -471,7 +471,7 @@ The sensitivity with respect to $\kappa_0$ is thus given by
 
 ## S5. Growth trajectories and fecundity at for optimal allocation $(\kappa_0^*)$
 
-Size dependent growth and fecundity for optimal allocation $(\kappa_0^*)$ differs from those presented in figure 3 in the main text (i.e. with $\kappa_0=0.8$ which was used to tune the model). Optimal allocation in our Windermere pike DEBIPM (main text figure 2) results in increased growth (mean size at age, Fig. S5A) but decreased size specific fecundity (Fig. S5B) compared to $\kappa_0=0.8$) of energy to somatic growth. 
+Size dependent growth and fecundity for optimal allocation $(\kappa_0^*)$ differs from those presented in figure 3 in the main text (i.e. with $\kappa_0=0.8$ which was used to fit the model). Optimal allocation in our Windermere pike DEBIPM (main text figure 2) results in increased growth (mean size at age, Fig. S5A) but decreased size specific fecundity (Fig. S5B) compared to $\kappa_0=0.8$) of energy to somatic growth. 
 
 ```{r, echo = FALSE, warning = FALSE, fig.height = 3, fig.width = 6}
 OptPars <- 
@@ -480,9 +480,9 @@ OptPars <-
 
 trajO <- data.frame()
 for(i in 1:nrow(OptPars)){
-  trajO[1,i] <- x[which.max(DEBage1.size(Pars = unlist(OptPars[i,])))]
+  trajO[1,i] <- x[which.max(age1size(Pars = unlist(OptPars[i,])))]
   for(j in 2:t){ # 25 years of growth
-    trajO[j,i] <- x[which.max(DEBgrowthfun(trajO[j-1,i],Pars = unlist(OptPars[i,])))]
+    trajO[j,i] <- x[which.max(growthfun(trajO[j-1,i],Pars = unlist(OptPars[i,])))]
   }
 }
 colnames(trajO) <- OptPars[1:5,1]
@@ -511,8 +511,8 @@ repO=NULL
 for(i in 2:ncol(trajO)){ # the temps, from 2nd to 6th column in trajO
   for(j in 1:nrow(trajO)){ # the sizes in trajo, i.e. Age trajO
     if(trajO$Age[j]==1){ 
-      rep_tplus1 <- cbind(trajO[j,i], DEBrepfun(e_m, unlist(OptPars[i-1,])), OptPars[i-1,] )} #use the OptPars corresponding to temps in columns in trajO
-    else{ rep_tplus1 <- cbind(trajO[j,i], DEBrepfun(trajO[j-1,i], unlist(OptPars[i-1,])), OptPars[i-1,] )} #j-1 because last years size predicts fecundity this year
+      rep_tplus1 <- cbind(trajO[j,i], repfun(e_m, unlist(OptPars[i-1,])), OptPars[i-1,] )} #use the OptPars corresponding to temps in columns in trajO
+    else{ rep_tplus1 <- cbind(trajO[j,i], repfun(trajO[j-1,i], unlist(OptPars[i-1,])), OptPars[i-1,] )} #j-1 because last years size predicts fecundity this year
     colnames(rep_tplus1) <- c("mass","fec","Temp", "Kappa", "Y")
     repO <- rbind(repO, rep_tplus1)
   }
@@ -535,18 +535,18 @@ repTopt <-
 groTopt+repTopt
 ```
 
-Figure S5. Mean size at age (A) and size specific fecundity (B) predicted from the optimal allocation strategy $(\kappa_0^*)$, Fig. 2 main text) at five temperatures and contrasted by growth and fecundity for $\kappa_0=0.8$ (i.e. $\kappa_0$ used for tuning the model).
+Figure S5. Mean size at age (A) and size specific fecundity (B) predicted from the optimal allocation strategy $(\kappa_0^*)$, Fig. 2 main text) at five temperatures and contrasted by growth and fecundity for $\kappa_0=0.8$ (i.e. $\kappa_0$ used for fitting the model).
 
 \newpage
 
-## S6. Fitness landscape & stable size structure for contrasting survival scenarios
+## S6. Fitness landscape & stable size structure for survival rate contrasts
 
-In the main analyses, we contrast the size- and temperature dependent survival used in our model using two altarntive survival scenarios (Fig. 4C main text). Here we present the coresponding fitness landscape and $\kappa_0^*$ (Fig S6A,B) and stable structure $w$ at the reference temperature (287 K, Fig S6C,D) and over temperature (Gig. S6E,F) for the temperatrue independnet survival contrast $a(m_s)$ (Fig. S6A,C,E) and constant survival $a=0.68$ (Fig. S6B,D,F). In the first scenario, we use temperature independent survival a(m_s) that correspond to survival at mean temperature (287 K) in Windermere where temperature does not affect the survival asymptote for weight (a(m_s), (Fig. 4D). In the second we use constant (both size- and temperature-independent) survival that equals the this asymptote at mean temperature (a=0.68, Fig. 4E).
+In the main analyses, we contrast the size- and temperature dependent survival used in our model using two alternative survival scenarios (Fig. 4C main text). Here we present the corresponding fitness landscape, $\kappa_0^*$ (Fig S6A,B) and stable structure $w$ at the reference temperature (287 K, Fig S6C,D) and over temperature (Fig. S6E,F) for the temperature independent survival contrast $a(m_s)$ (Fig. S6A,C,E) and constant survival $a=0.68$ (Fig. S6B,D,F). In the first scenario, we use temperature independent survival a(m_s) that correspond to survival at mean temperature (287 K) in Windermere where temperature does not affect the survival asymptote for mass ($a(m_s)$, (Fig. 4D). In the second we use constant (both size- and temperature-independent) survival that equals the this asymptote at mean temperature (a=0.68, Fig. 4E).
 
 ```{r, echo = FALSE, warning = FALSE, fig.height = 8, fig.width = 8}
 mycolors <- colorRampPalette(colors=c("white","#ce1256"))(9) ##ffffd4
 
-Res_lam_2 <- read.delim("//storage-og.slu.se/home$/vitl0001/My Documents/Manus2/Results/Results1108/Res_lam_2_1108.txt", sep = ",")
+Res_lam_2 <- read.delim("//storage-og.slu.se/home$/vitl0001/My Documents/Manus2/Results/Results0224/Res_lam_2_2022-02-24.txt", sep = ",")
 maxl_2 <- as.data.frame(Res_lam_2) %>% 
   group_by(T) %>%
   slice_max(Lambda)
@@ -554,27 +554,28 @@ maxl_2["Sur_f"] <- "NotempVin"
 
 FigS6a <- 
   as_tibble(Res_lam_2) %>%
-    filter(kappa > 0.66) %>%
+  filter(kappa > 0.69) %>%
   ggplot(., aes(T,kappa)) +
-    geom_raster(aes(fill=round(Lambda, 4))) + #, interpolate = TRUE) +
-    geom_line(data=maxl_2 ,aes(T,kappa),size=0.85) +
-    scale_fill_gradientn(
+  geom_raster(aes(fill=round(Lambda, 4))) +
+  geom_line(data=maxl_2,aes(T,kappa),size=0.85) +
+  scale_fill_gradientn(
     limits = c(0,max(as.data.frame(Res_lam_2[,'Lambda'])+0.0001)),
     colours = c("black","white","#f1eef6","#ce1256"),
     values = rescale(c(0,0.9999,1, round(max(as.data.frame(Res_lam_2[,'Lambda'])), 4)),
                      to=c(0,1)),
-    breaks = c(0,1,round(max(as.data.frame(Res_lam_2[,'Lambda'])), 3)),
-    labels = c(0,1,round(max(as.data.frame(Res_lam_2[,'Lambda'])),3)),
+    breaks = c(0,1,round(max(as.data.frame(Res_lam_2[,'Lambda'])), 2)),
+    labels=c(0,1,round(max(as.data.frame(Res_lam_2[,'Lambda'])),3)),
     name = expression(lambda)) +
-    scale_x_continuous(expand = c(0,0), name = "Temperature [K]", breaks = seq(285,293,2), limits = c(284,294.25)) +
-    scale_y_continuous(expand = c(0,0), name=expression(paste(kappa," (Growth allocation)"))) +
-    coord_cartesian(xlim = c(284.25,294)) +
-    annotate(geom="text", -Inf, Inf, label="A", hjust = -1, vjust = 2, size= 4, fontface = "bold")+
-    theme_bw() +
-    theme(panel.grid.major = element_blank(),
-    panel.grid.minor = element_blank())
+  scale_x_continuous(expand = c(0,0), name = "Temperature [K]", breaks = seq(284,292,2), limits = c(283,293.5)) +
+  scale_y_continuous(expand = c(0,0), name=expression(paste(kappa," (Growth allocation)"))) +
+  annotate(geom="text", -Inf, Inf, label="A", hjust = -1, vjust = 2, size= 4, fontface = "bold") +
+  coord_cartesian(xlim = c(283.5,292.5)) +
+  theme_bw() +
+  theme(panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank())
 
-Res_w_2 <- read.delim("//storage-og.slu.se/home$/vitl0001/My Documents/Manus2/Results/Results1108/Res_w_2_1108.txt", sep = ",")
+
+Res_w_2 <- read.delim("//storage-og.slu.se/home$/vitl0001/My Documents/Manus2/Results/Results0224/Res_w_2_2022-02-24.txt", sep = ",")
 colnames(Res_w_2)[4:ncol(Res_w_2)] <- sub("X", "", colnames(Res_w_2)[4:ncol(Res_w_2)])
 
 Res_w_2_long <- pivot_longer(as.data.frame(Res_w_2), cols = c(4:ncol(Res_w_2)), 
@@ -611,25 +612,24 @@ FigS6c_2 <- Res_w_2_long %>%
 FigS6e <- 
   as_tibble(Res_w_2_long) %>%
   filter(kappa %in% 0.8) %>%
-  mutate(biom_log=log(biom)) %>%
+  mutate(biom_log=log(biom)) %>% 
   ggplot(., aes(as.double(Size),T, z=biom_log, colour=biom_log))+
-  geom_contour_filled(breaks = c(min(log(Res_w_2_long$biom)), #-12
-                                 seq(-25,-15,length.out = 7),
-                                 max(log(Res_w_2_long$biom))))+ #-160
-  annotate(geom="text", -Inf, Inf, label="E", hjust = -1, vjust = 2, size= 4, fontface = "bold")+
-  scale_fill_manual(values = mycolors, name="Relative densities", 
-                    labels=c(paste("< ",signif(exp(-25),5)), 
-                             signif(seq(exp(-25),exp(-15),length.out = 6),5),
-                             #expression("">=signif(max(Res_w_2_long$biom),5))))+
-                             paste(">",signif(max(Res_w_2_long$biom),5)))) + 
+  geom_contour_filled(breaks = c(min(log(Res_w_2_long$biom)), 
+                                 seq(log(1e-10),log(1e-7),length.out = 6),
+                                 max(log(Res_w_2_long$biom))))+ 
+    scale_fill_manual(values = mycolors, name="Relative densities", 
+                    labels=c(paste("< ",signif(1e-10,2)), 
+                             signif(seq(1e-10,1e-7,length.out = 5),2),
+                             paste(">",signif(max(Res_w_2_long$biom),2)))) + 
   scale_y_continuous(name = "Temperature [K]", limits = c(284,294),breaks = seq(285,293,2))+
-  scale_x_continuous( name = expression(paste("Mass ",italic("m"["s"])," [g]")), limits = c(0,20000))+
+  scale_x_continuous( name = expression(paste("Mass ",italic("m"["s"])," [g]")), limits = c(0,20000)) +
+  annotate(geom="text", -Inf, Inf, label="E", hjust = -14, vjust = 2, size= 4, fontface = "bold") +
   coord_cartesian(ylim = c(284,294)) +
   theme_bw() +
   theme(panel.grid.major = element_blank(),
         panel.grid.minor = element_blank())
 
-Res_lam_3 <- read.delim("//storage-og.slu.se/home$/vitl0001/My Documents/Manus2/Results/Results1108/Res_lam_3_1108.txt", sep = ",")
+Res_lam_3 <- read.delim("//storage-og.slu.se/home$/vitl0001/My Documents/Manus2/Results/Results0224/Res_lam_3_2022-02-24.txt", sep = ",")
 maxl_3 <- as.data.frame(Res_lam_3) %>% 
   group_by(T) %>%
   slice_max(Lambda)
@@ -637,28 +637,28 @@ maxl_3["Sur_f"] <- "flat"
 
 FigS6b <- 
   as_tibble(Res_lam_3) %>%
-    filter(kappa > 0.66) %>%
+  filter(kappa > 0.69) %>%
   ggplot(., aes(T,kappa)) +
-    geom_raster(aes(fill=round(Lambda, 4))) + #, interpolate = TRUE) +
-    geom_line(data=maxl_3 ,aes(T,kappa),size=0.85) +
-    scale_fill_gradientn(
+  geom_raster(aes(fill=round(Lambda, 4))) +
+  geom_line(data=maxl_3,aes(T,kappa),size=0.85) +
+  scale_fill_gradientn(
     limits = c(0,max(as.data.frame(Res_lam_3[,'Lambda'])+0.0001)),
     colours = c("black","white","#f1eef6","#ce1256"),
     values = rescale(c(0,0.9999,1, round(max(as.data.frame(Res_lam_3[,'Lambda'])), 4)),
                      to=c(0,1)),
-    breaks = c(0,1,round(max(as.data.frame(Res_lam_3[,'Lambda'])), 3)),
-    labels=c("0",1,round(max(as.data.frame(Res_lam_3[,'Lambda'])), 3)),
+    breaks = c(0,1,round(max(as.data.frame(Res_lam_3[,'Lambda'])), 2)),
+    labels=c(0,1,round(max(as.data.frame(Res_lam_3[,'Lambda'])),3)),
     name = expression(lambda)) +
-    scale_x_continuous(expand = c(0,0), name = "Temperature [K]", breaks = seq(285,293,2), limits = c(284,294.25)) +
-    scale_y_continuous(expand = c(0,0), name = expression(paste(kappa," (Growth allocation)"))) +
-    coord_cartesian(xlim = c(284.25,294)) +
-    annotate(geom="text", -Inf, Inf, label="B", hjust = -1, vjust = 2, size= 4, fontface = "bold")+
-    theme_bw() +
-    theme(panel.grid.major = element_blank(),
-    panel.grid.minor = element_blank())
+  scale_x_continuous(expand = c(0,0), name = "Temperature [K]", breaks = seq(284,292,2), limits = c(283,293.5)) +
+  scale_y_continuous(expand = c(0,0), name=expression(paste(kappa," (Growth allocation)"))) +
+  annotate(geom="text", -Inf, Inf, label="B", hjust = -1, vjust = 2, size= 4, fontface = "bold") +
+  coord_cartesian(xlim = c(283.5,292.5)) +
+  theme_bw() +
+  theme(panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank())
 
 # a=0.68, i.e flat survival scenario
-Res_w_3 <- read.delim("//storage-og.slu.se/home$/vitl0001/My Documents/Manus2/Results/Results1108/Res_w_3_1108.txt", sep = ",")
+Res_w_3 <- read.delim("//storage-og.slu.se/home$/vitl0001/My Documents/Manus2/Results/Results0224/Res_w_3_2022-02-24.txt", sep = ",")
 colnames(Res_w_3)[4:ncol(Res_w_3)] <- sub("X", "", colnames(Res_w_3)[4:ncol(Res_w_3)])
 
 Res_w_3_long <- pivot_longer(as.data.frame(Res_w_3), cols = c(4:ncol(Res_w_3)), 
@@ -695,17 +695,16 @@ FigS6d_2 <- Res_w_3_long %>%
 FigS6f <- 
   as_tibble(Res_w_3_long) %>%
   filter(kappa %in% 0.8) %>%
-  mutate(biom_log=log(biom)) %>%
+  mutate(biom_log=log(biom)) %>% 
   ggplot(., aes(as.double(Size),T, z=biom_log, colour=biom_log))+
-  geom_contour_filled(breaks = c(min(log(Res_w_3_long$biom)), #-12
-                                 seq(-25,-15,length.out = 7),
-                                 max(log(Res_w_3_long$biom))))+ #-160
-  annotate(geom="text", -Inf, Inf, label="F", hjust = -1, vjust = 2, size= 4, fontface = "bold")+
+  geom_contour_filled(breaks = c(min(log(Res_w_3_long$biom)), 
+                                 seq(log(1e-10),log(1e-7),length.out = 6),
+                                 max(log(Res_w_3_long$biom))))+ 
+  annotate(geom="text", -Inf, Inf, label="F", hjust = -15, vjust = 2, size= 4, fontface = "bold")+
   scale_fill_manual(values = mycolors, name="Relative densities", 
-                    labels=c(paste("< ",signif(exp(-25),5)), 
-                             signif(seq(exp(-25),exp(-15),length.out = 6),5),
-                             #expression("">=signif(max(Res_w_3_long$biom),5))))+
-                             paste(">",signif(max(Res_w_3_long$biom),5)))) + 
+                    labels=c(paste("< ",signif(1e-10,2)), 
+                             signif(seq(1e-10,1e-7,length.out = 5),2),
+                             paste(">",signif(max(Res_w_3_long$biom),2)))) + 
   scale_y_continuous(name = "Temperature [K]", limits = c(284,294),breaks = seq(285,293,2))+
   scale_x_continuous( name = expression(paste("Mass ",italic("m"["s"])," [g]")), limits = c(0,20000))+
   coord_cartesian(ylim = c(284,294)) +
@@ -727,3 +726,9 @@ print(FigS6d_2, vp = subvp2)
 ```
 
 Figure S6. Fitness landscape (A,B) with solid line representing optimal allocation strategy ($\kappa_0^*$) and stable structure $w$ for four temperatures (C,D) and over temperature (E,F) for survival contrast $a(m_s)$(A,C,E) and $a=0.68$ (B,D,F).
+
+## References
+
+Lindmark, M., J. Ohlberger, and A. Gårdmark. 2022. Optimum growth temperature declines with body size within fish species. Glob Chang Biol.
+
+
