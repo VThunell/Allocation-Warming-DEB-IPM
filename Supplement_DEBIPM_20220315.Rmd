@@ -6,12 +6,13 @@ title: |
   |
   | Journal name
 author: "Viktor Thunell, Anna Gårdmark, Magnus Huss & Yngvild Vindenes"
-output: pdf_document
+output: word_document
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 setwd("C:/Users/vitl0001/VThunell_repos/Temperature-DEBIPM")
+library(patchwork) 
 ```
 
 # Table of contents
@@ -258,22 +259,22 @@ Figure S2. Comparison of DEBIPM and data on Windermere pike (black points in A a
 When analyzing the IPM, the number of size classes in the ($n$, or matrix mesh size) should not affect the estimation of $\lambda$ and stable size structure ($w$). We therefore estimate $\lambda$ for DEBIPMs with $0<n<2400$ (Fig. S3A) to find the minimum number size classes that does not affect $\lambda$ to an accuracy of four decimal points nor the qualitative shape of the $w$.
 
 ```{r, echo = FALSE, warning = FALSE, fig.height = 4, fig.width = 6}
-# ns <- rev(seq(200,2600,200))
-# 
-# nlam=data.frame()
-# nwlam=NULL
-# nvlam=list()
-# for(i in ns){
-#     n <- i
-#     x <- seq(mmin,mmax, length=n)
-#     dx <- x[2] - x[1] # step size (grams) in the continuos size
-#     lam <- wvlambda.projection(K.matrix(test_Pars <- c(T = 287,                                           kappa = 0.8, Y = 1) ))
-#     nlam <- rbind(nlam,c(i,lam[[1]]))
-#     nwlam <- rbind(nwlam,cbind(i,x,lam[[2]][2:nrow(lam[[2]]),]))
-#     #nvlam <- c(nvlam,c(cbind(i,x,lam[[3]])))
-#  }
-# colnames(nlam) <- c("n","lambda")
-# colnames(nwlam) <- c("n","x","w")
+ns <- rev(seq(200,2600,200))
+
+nlam=data.frame()
+nwlam=NULL
+nvlam=list()
+for(i in ns){
+    n <- i
+    x <- seq(mmin,mmax, length=n)
+    dx <- x[2] - x[1] # step size (grams) in the continuos size
+    lam <- wvlambda.projection(K.matrix(test_Pars <- c(T = 287,                                           kappa = 0.8, Y = 1) ))
+    nlam <- rbind(nlam,c(i,lam[[1]]))
+    nwlam <- rbind(nwlam,cbind(i,x,lam[[2]][2:nrow(lam[[2]]),]))
+    #nvlam <- c(nvlam,c(cbind(i,x,lam[[3]])))
+ }
+colnames(nlam) <- c("n","lambda")
+colnames(nwlam) <- c("n","x","w")
 
 nW <-
   as_tibble(nwlam) %>%
