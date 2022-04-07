@@ -36,8 +36,10 @@ write.table(Res_lam, file=paste("Res_lam_1_",date,".txt", sep = ""),quote=TRUE, 
 write.table(Res_v, file=paste("Res_v_1_",date,".txt", sep = ""),quote=TRUE, sep=",", row.names=TRUE)
 write.table(Res_w, file=paste("Res_w_1_",date,".txt", sep = ""),quote=TRUE, sep=",", row.names=TRUE)
 
-# RESULT 1b - Baseline (Vindenes_Tsurv) bu with cM=0
+### RESULT 1b - Baseline (Vindenes_Tsurv) but with cM=0 ####
+
 cM  <- 0 # Linear interaction between size and temp for Maintenance
+
 Res_lam <- matrix(ncol = 3+1, nrow = length(kappa)*length(T)*length(Y)) # assuming 40 here from files
 Res_v  <-  matrix(ncol = 3+n+1, nrow = length(kappa)*length(T)*length(Y)) # assuming 40 here from files
 Res_w  <-  matrix(ncol = 3+n+1, nrow = length(kappa)*length(T)*length(Y)) # assuming 40 here from files
@@ -56,9 +58,9 @@ colnames(Res_lam) <- c("T","kappa","Y","Lambda")
 colnames(Res_v) <- c("T","kappa","Y","0",x)
 colnames(Res_w) <- c("T","kappa","Y","0",x)
 
-write.table(Res_lam, file=paste("Res_lam_1_",date,".txt", sep = ""),quote=TRUE,  sep=",", row.names=TRUE)
-write.table(Res_v, file=paste("Res_v_1_",date,".txt", sep = ""),quote=TRUE, sep=",", row.names=TRUE)
-write.table(Res_w, file=paste("Res_w_1_",date,".txt", sep = ""),quote=TRUE, sep=",", row.names=TRUE)
+write.table(Res_lam, file=paste("Res_lam_1b_",date,".txt", sep = ""),quote=TRUE,  sep=",", row.names=TRUE)
+write.table(Res_v, file=paste("Res_v_1b_",date,".txt", sep = ""),quote=TRUE, sep=",", row.names=TRUE)
+write.table(Res_w, file=paste("Res_w_1b_",date,".txt", sep = ""),quote=TRUE, sep=",", row.names=TRUE)
 
 
 ### RESULT 2 ####
