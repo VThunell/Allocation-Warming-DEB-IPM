@@ -3,6 +3,7 @@
 
 # Run main (1) and the two (2,3) contrasting survival rate models
 # 1 - Baseline (Vindenes_Tsurv)
+# 1b - Baseline (Vindenes_Tsurv) bu with cM=0
 # 2 - Temp independent surv (Vsurvfun(m))
 # 3 - Size independent surv (0.68)
 
@@ -35,7 +36,34 @@ write.table(Res_lam, file=paste("Res_lam_1_",date,".txt", sep = ""),quote=TRUE, 
 write.table(Res_v, file=paste("Res_v_1_",date,".txt", sep = ""),quote=TRUE, sep=",", row.names=TRUE)
 write.table(Res_w, file=paste("Res_w_1_",date,".txt", sep = ""),quote=TRUE, sep=",", row.names=TRUE)
 
+# RESULT 1b - Baseline (Vindenes_Tsurv) bu with cM=0
+cM  <- 0 # Linear interaction between size and temp for Maintenance
+Res_lam <- matrix(ncol = 3+1, nrow = length(kappa)*length(T)*length(Y)) # assuming 40 here from files
+Res_v  <-  matrix(ncol = 3+n+1, nrow = length(kappa)*length(T)*length(Y)) # assuming 40 here from files
+Res_w  <-  matrix(ncol = 3+n+1, nrow = length(kappa)*length(T)*length(Y)) # assuming 40 here from files
+
+parsK <- as.matrix(expand.grid(T,kappa,Y))
+colnames(parsK) <- c("T","kappa","Y")
+
+for (i in 1:nrow(parsK)){
+  res <- wvlambda.projection(K.matrix(parsK[i,]))
+  Res_lam[i,] <- c(parsK[i,],res$lam) #c(T[d],kappa[e],Y[f], res$lambda)
+  Res_v[i,]   <- c(parsK[i,],res$v) #REPRODUCTIVE VALUES
+  Res_w[i,]   <- c(parsK[i,],res$w) #STABLE STRUCTURE
+}
+
+colnames(Res_lam) <- c("T","kappa","Y","Lambda")
+colnames(Res_v) <- c("T","kappa","Y","0",x)
+colnames(Res_w) <- c("T","kappa","Y","0",x)
+
+write.table(Res_lam, file=paste("Res_lam_1_",date,".txt", sep = ""),quote=TRUE,  sep=",", row.names=TRUE)
+write.table(Res_v, file=paste("Res_v_1_",date,".txt", sep = ""),quote=TRUE, sep=",", row.names=TRUE)
+write.table(Res_w, file=paste("Res_w_1_",date,".txt", sep = ""),quote=TRUE, sep=",", row.names=TRUE)
+
+
 ### RESULT 2 ####
+
+cM  <- 0.0026 # Linear interaction between size and temp for Maintenance
 
 ### SURVIVAL a(x) ####
 survfun <- function(m, Pars) { # Mass-Temp dependence of yearly Mortality 

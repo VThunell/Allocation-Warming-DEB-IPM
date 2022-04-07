@@ -52,7 +52,7 @@ Td  <- T0 + 0.75 # deactivation temperature
 bTc <- 0.79 # rate at reference (a common) temperature Sharpe-Schoolf
 
 # Parameters for Temp., allocation and feeding level (not used in analysis and excluded the main text) for testing demographic function
-test_Pars <- c(T = 287, kappa = 0.8, Y = 1) 
+test_Pars <- c(T = 292, kappa = 0.8, Y = 1) 
 
 ### Temperature dependence functions of vital rates with interaction between Mass & Temp ####
 # "Arrhenius-Lindmark" function (Boltzmann-Arrhenius with interaction (term cM) between Mass & Temp)
@@ -74,13 +74,24 @@ rI_T_Pad <- function(T) { # GU Temp dependence of intake
 # if m_s is a single value, ratefun returns a matrix.
 # Intake is not consumption but net energy available for growth, reproduction and maintenance
 
+# dwdt <- function(time, m, Pars) {
+#   with(as.list(c(m, Pars)), {
+#   maintenance <- (rho1*(m^rho2)*rM_T_AL(T,m)) # Maintenance rate at time, mass with Pars
+#   intake <- alpha*Y*eps1*(m^eps2)*rI_T_Pad(T) # Intake energy is not consumption
+#   mass <- kap_fun(m,kappa)*intake - maintenance    # Growth rate at time, mass with Pars
+#   return(list(mass, maintenance, intake)) # return all rates
+#  })
+# }
+
 dwdt <- function(time, m, Pars) {
   with(as.list(c(m, Pars)), {
-  maintenance <- (rho1*(m^rho2)*rM_T_AL(T,m)) # Maintenance rate at time, mass with Pars
-  intake <- alpha*Y*eps1*(m^eps2)*rI_T_Pad(T) # Intake energy
-  mass <- kap_fun(m,kappa)*intake - maintenance    # Growth rate at time, mass with Pars
-  return(list(mass, maintenance, intake)) # return all rates
- })
+    maintenance <- (rho1*(m^rho2)*rM_T_AL(T,m)) # Maintenance rate at time, mass with Pars
+    intake <- alpha*Y*eps1*(m^eps2)*rI_T_Pad(T) # Intake energy
+    # Growth rate at time, mass with Pars:
+    mass <- ifelse(kap_fun(m,kappa)*intake >= maintenance, kap_fun(m,kappa)*intake - maintenance,
+                   ifelse(kap_fun(m,kappa)*intake < maintenance & maintenance <= intake, 0, intake - maintenance))
+    return(list(mass, maintenance, intake)) # return all rates
+  })
 }
 
 ratefun <- function(m, Pars) { # mean function for m_s+1 over one time step (one season). 
