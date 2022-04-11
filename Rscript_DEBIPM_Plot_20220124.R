@@ -46,12 +46,12 @@ T_rates = NULL
 
 for(i in Temp) {
   maint <- rho1*(x^rho2)*rM_T_AL(i,x)
-  intake  <- eps1*(x^eps2)*rI_T_Pad(i) 
+  cons  <- eps1*(x^eps2)*rI_T_Pad(i) 
   T_rates  <- rbind(T_rates,
                     cbind(Temp = i, mass = x, 
-                          maint, intake, 
-                          growth_E = kap_fun(x,test_Pars["kappa"])*alpha*test_Pars["Y"]*intake - maint, 
-                          repro_E = alpha*test_Pars["Y"]*(1-kap_fun(x,test_Pars["kappa"]))*intake))
+                          maint, cons, 
+                          growth_E = kap_fun(x,test_Pars["kappa"])*alpha*test_Pars["Y"]*cons - maint, 
+                          repro_E = alpha*test_Pars["Y"]*(1-kap_fun(x,test_Pars["kappa"]))*cons))
 }
 
 T_rates_long <- gather(as.data.frame(T_rates), key = "E_type", value ="g_day", c(5,6)) # gather only column 6,7
@@ -77,7 +77,7 @@ T_rates_long %>%
 ### PLOT DEMOGRAPHIC FUNCTIONS FOR IPM (AND FIG. 3A-D)####
 
 ### Plot individual growth, g(m_s+1;m_s,T) via growthfun() ####
-plot(x,  growthfun(14000, y=x, test_Pars)*dx, type="l", ylab="growthfun(y;x)", 
+plot(x,  growthfun(14000, y=x, test_Pars)*dx, type="l", ylab="growthfun(y;x)",
      xlab="y", main = "Prob. density of DEBgrowth(x,y)")
 lines(x, growthfun(10000, y=x, test_Pars)*dx, lty=2)
 lines(x, growthfun(1000, y=x, test_Pars)*dx, lty=3)
@@ -101,6 +101,7 @@ trajG <- pivot_longer(traj, cols=c(2:6),names_to = "Temp", values_to = "mass" )
 trajG$Temp <- as.double(trajG$Temp)
 
 groT <- ggplot(trajG) +
+  #geom_point(data=GData, aes(Age, ltow(Length)), alpha=0.1) +
   geom_line(data = trajG, size=0.85, aes(Age, mass, color = as.factor(Temp))) +
   ylab(expression(paste("Mass ", italic("\u03BC")["g"]," [g]"))) +
   xlab("Age [years]") +
@@ -123,13 +124,16 @@ for(i in 2:ncol(traj)){ # the temps, from 2nd to 6th column in traj
   }
 }
 
-repT <- ggplot()+
+repT <- ggplot() +
+  #geom_point(data=FData, aes(Weight, Eggs), alpha=0.1)+
   geom_line(data=as_tibble(rep), size=0.85, aes(mass, fec, color = as.factor(Temp)))+
   scale_color_manual(values = c('#4575b4','#91bfdb','#fee090','#fc8d59','#d73027'), name="Temp [K]")+
   annotate(geom="text", -Inf, Inf, label="B", hjust = -2, vjust = 3, size= 4, fontface = "bold") +
   ylab(expression(paste(italic("f"),"(",italic("m"["s"]),italic(",T"),")"))) +
   xlab(expression(paste("Mass ",italic("m")[s]," [g]"))) +
   theme_bw()
+
+groT+repT
 
 #### Plot Age 1 size distribution, o(e_m,T) via age1size() ####
 T_o <- NULL

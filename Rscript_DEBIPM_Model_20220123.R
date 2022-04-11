@@ -33,7 +33,7 @@ library(tictoc) # clock model runs
 rho1 <- 0.02 # Maintenance allometric scalar, based on pike estimated by Lindmark 2019 from Armstrong 1992.
 rho2 <- 0.76 # Maintenance allometric exponent, rescaled from 0.76 in Lindmark 2019 based on Diana 1982
 eps1 <- 1.55 # Consumption allometric scalar, free parameter to fit growth in Windermere pike.
-eps2 <- 0.53 # Consumption allometric exponent, free parameter to fit growth in Windermere pike.
+eps2 <- 0.54 # Consumption allometric exponent, free parameter to fit growth in Windermere pike.
 
 ## General DEB-parameters 
 alpha <- 0.4   # assimilation efficiency
@@ -44,7 +44,7 @@ kap_fun <- function(m, kappa, ha=2){kappa*exp(-m/(ha*max(x)))} #for body size de
 ## Temperature scaling parameter values from Lindmark et al. 2022, Global change biol.
 T0 <-  292            # Reference Temp
 k  <-  8.617333e-05   # Boltzmann constant
-cM  <- 0.0026 # Linear interaction between size and temp for Maintenance
+cM  <- 0# Linear interaction between size and temp for Maintenance
 EaC <- 0.73 # activation energy Consumption for Sharpe-Schoolf
 EaM <- 0.62 # activation energy Maintenance
 EdI <- 1.89 # deactivation energy
@@ -52,19 +52,18 @@ Td  <- T0 + 0.75 # deactivation temperature
 bTc <- 0.79 # rate at reference (a common) temperature Sharpe-Schoolf
 
 # Parameters for Temp., allocation and feeding level (not used in analysis and excluded the main text) for testing demographic function
-test_Pars <- c(T = 292, kappa = 0.8, Y = 1) 
+test_Pars <- c(T = 287, kappa = 0.8, Y = 1) 
 
 ### Temperature dependence functions of vital rates with interaction between Mass & Temp ####
 # "Arrhenius-Lindmark" function (Boltzmann-Arrhenius with interaction (term cM) between Mass & Temp)
 # gives Mass and temp dependence of Maintenance 
-rM_T_AL <- function(T,m) { # 
-  (m^(cM*(T-T0)))*
-    exp(EaM*(T-T0)/(k*T*T0)) }
+rM_T_AL <- function(T,m) {  
+  (m^(cM*(T-T0)))* exp(EaM*(T-T0)/(k*T*T0)) }
 
 # Padfield unimodal function for unimodal consumption over temperature
 rI_T_Pad <- function(T) { # GU Temp dependence of intake
-  bTc * 
-    exp(EaC*(T-T0)/(k*T*T0)) * (1+exp(EdI*(T-Td)/(k*T*Td)))^(-1)
+  bTc * exp(EaC*(T-T0)/(k*T*T0)) 
+  * (1+exp(EdI*(T-Td)/(k*T*Td)))^(-1)
   }
 
 ###  TEMP & MASS DEPENDENT RATE FUNCTION ####
@@ -74,6 +73,7 @@ rI_T_Pad <- function(T) { # GU Temp dependence of intake
 # if m_s is a single value, ratefun returns a matrix.
 # Intake is not consumption but net energy available for growth, reproduction and maintenance
 
+#OLD:
 # dwdt <- function(time, m, Pars) {
 #   with(as.list(c(m, Pars)), {
 #   maintenance <- (rho1*(m^rho2)*rM_T_AL(T,m)) # Maintenance rate at time, mass with Pars
@@ -123,14 +123,14 @@ el_surv = 1.9e-4  # egg & larvae survival. Vindenes 2014 based on Kipling and Fr
 ltow  <-  function(l){exp(-6.49286)*l^3.4434} 
 wtol <- function(w){(w/exp(-6.49286))^(1/3.4434)}
 
-### DEMOGRAPHIC RATES FUNCTIONS ####
+### DEMOGRAPHIC RATE FUNCTIONS ####
 
 ### GROWTH g(m_s+1; m_s, T) ####
 # growthfun() returns a vector with a size distribution if given a single size m
 # or if m is a vector, a matrix where columns are size distributions y from each entry in m.
 
 growthfun <- function(m, Pars, y=x) {
-  xsd <- function(mu, nu.var = -0.0001,  sdres = 100){ # generates sd for mu
+  xsd <- function(mu, nu.var = -0.0001,  sdres = 300){ # generates sd for mu
     sdres * exp(nu.var*mu) }
   ydf <- function(mu, y=x) { # generates m:s size distributions for next year
     var <- xsd(mu)^2 # variance
@@ -241,11 +241,24 @@ wvlambda.projection <- function(Kmat, N0=rep(10, length(Kmat[1,])), tol=1e-20) {
   return(list("lambda"=lam, "w"=w,"v"=v))
 }
 
-# Test the DEBIPM model for timing of each run and taht it sums to 1
+# Test the DEBIPM model for timing of each run and that it sums to 1
+growthfun <- function(m, Pars, y=x) {
+  xsd <- function(mu, nu.var = -0.0001,  sdres = 300){ # generates sd for mu
+    sdres * exp(nu.var*mu) }
+  ydf <- function(mu, y=x) { # generates m:s size distributions for next year
+    var <- xsd(mu)^2 # variance
+    yd <- dlnorm(y, meanlog = log(mu) - .5*log(1 + var/mu^2), sdlog = sqrt(log(1 + var/mu^2))) #Distribution of y
+    if(sum(yd*dx) == 0){
+      c(rep(0, n-1), 1/dx)
+    } else { yd/sum(yd*dx) } } #scale it to one
+  mu <- ratefun(m, Pars)[sl,2,] # mass on the last day of growth season for m
+  sapply(mu, FUN = ydf)
+}
+
 # tic()
 # onetest <- wvlambda.projection(K.matrix(test_Pars))$lambda
 # toc()
-# sum(onetest$w) 
+# sum(onetest$w)
 
 ### SENSITIVITY OF THE DEBIPM ####
 ## Numerical expression for the derivatives for mass and temperature specific 
