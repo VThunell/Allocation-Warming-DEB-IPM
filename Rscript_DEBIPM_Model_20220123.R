@@ -62,9 +62,7 @@ rM_T_AL <- function(T,m) {
 
 # Padfield unimodal function for unimodal consumption over temperature
 rI_T_Pad <- function(T) { # GU Temp dependence of intake
-  bTc * exp(EaC*(T-T0)/(k*T*T0)) 
-  * (1+exp(EdI*(T-Td)/(k*T*Td)))^(-1)
-  }
+  bTc * exp(EaC*(T-T0)/(k*T*T0)) * (1+exp(EdI*(T-Td)/(k*T*Td)))^(-1) }
 
 ###  TEMP & MASS DEPENDENT RATE FUNCTION ####
 # ratefun() uses dwdt() through ode() and returns the mass and rate for consumption 
@@ -286,3 +284,4 @@ K_NumDer <- function(h, Pars){
   (K.matrix(Pars = c(T = Pars[["T"]],kappa = Pars[["kappa"]] + h,Y = Pars[["Y"]])) -
      K.matrix(Pars = c(T = Pars[["T"]],kappa = Pars[["kappa"]],Y = Pars[["Y"]])))/h
 }
+

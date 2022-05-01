@@ -9,10 +9,10 @@ library(grid)   # for viewport()
 
 ## Load in results for Main and Contrast results ####
 # Results Baseline scenario
-Res_lam_1 <- read.delim("//storage-og.slu.se/home$/vitl0001/My Documents/Manus2/Results/Results0224/Res_lam_1_2022-02-24.txt", sep = ",")
-Res_v_1 <- read.delim("//storage-og.slu.se/home$/vitl0001/My Documents/Manus2/Results/Results0224/Res_v_1_2022-02-24.txt", sep = ",")
+Res_lam_1 <- read.delim("//storage-og.slu.se/home$/vitl0001/My Documents/Manus2/Results/Results220413/Res_lam_1_2022-04-21.txt", sep = ",")
+Res_v_1 <- read.delim("//storage-og.slu.se/home$/vitl0001/My Documents/Manus2/Results/Results220413/Res_v_1_2022-04-21.txt", sep = ",")
 colnames(Res_v_1)[4:ncol(Res_v_1)] <- sub("X", "", colnames(Res_v_1)[4:ncol(Res_v_1)])
-Res_w_1 <- read.delim("//storage-og.slu.se/home$/vitl0001/My Documents/Manus2/Results/Results0224/Res_w_1_2022-02-24.txt", sep = ",")
+Res_w_1 <- read.delim("//storage-og.slu.se/home$/vitl0001/My Documents/Manus2/Results/Results220413/Res_w_1_2022-04-21.txt", sep = ",")
 colnames(Res_w_1)[4:ncol(Res_w_1)] <- sub("X", "", colnames(Res_w_1)[4:ncol(Res_w_1)])
 
 maxl_1 <- as.data.frame(Res_lam_1) %>% # get max lambda for each temperature 
@@ -21,14 +21,14 @@ maxl_1 <- as.data.frame(Res_lam_1) %>% # get max lambda for each temperature
 maxl_1["Sur_f"] <- "main_s"
 
 # Results for size-, but not temperature-dependent survival
-Res_lam_2 <- read.delim("//storage-og.slu.se/home$/vitl0001/My Documents/Manus2/Results/Results0224/Res_lam_2_2022-02-24.txt", sep = ",")
+Res_lam_2 <- read.delim("//storage-og.slu.se/home$/vitl0001/My Documents/Manus2/Results/Results220413/Res_lam_2_2022-04-21.txt", sep = ",")
 maxl_2 <- as.data.frame(Res_lam_2) %>% # get max lambda for each temperature
   group_by(T) %>%
   slice_max(Lambda)
 maxl_2["Sur_f"] <- "tind_s"
 
 # Results for constant survival (i.e. independent of size and temperature)
-Res_lam_3 <- read.delim("//storage-og.slu.se/home$/vitl0001/My Documents/Manus2/Results/Results0224/Res_lam_3_2022-02-24.txt", sep = ",")
+Res_lam_3 <- read.delim("//storage-og.slu.se/home$/vitl0001/My Documents/Manus2/Results/Results220413/Res_lam_3_2022-04-21.txt", sep = ",")
 maxl_3 <- as.data.frame(Res_lam_3) %>% # get max lambda fr each temperature
   group_by(T) %>%
   slice_max(Lambda)
@@ -193,6 +193,7 @@ Fig3e_1 <- Res_w_1_long %>%
   ylab("Stable structure w") +
   xlab(expression(paste("Mass ",italic("m"["s"])," [g]"))) +
   ylim(0,5e-7)+
+  xlim(0,10000)+
   annotate(geom="text", -Inf, Inf, label="E", hjust = -21, vjust = 3, size= 4, fontface = "bold") +
   scale_color_manual(values = c('#4575b4','#91bfdb','#fee090','#fc8d59','#d73027'), name="Temp [K]")+
   theme_bw() +
@@ -213,20 +214,21 @@ Fig3e_2 <- Res_w_1_long %>%
         plot.background = element_rect(fill = "transparent", color = NA), # bg of the plot
         axis.title.y=element_blank())
 
-mycolors <- colorRampPalette(colors=c("white","#ce1256"))(9)
+mycolors <- colorRampPalette(colors=c("#feebe2","#ce1256"))(9)
 Fig3f <- 
   as_tibble(Res_w_1_long) %>%
   filter(kappa %in% 0.8) %>%
   mutate(biom_log=log(biom)) %>% 
+    
   ggplot(., aes(as.double(Size),T, z=biom_log, colour=biom_log))+
   geom_contour_filled(breaks = c(min(log(Res_w_1_long$biom)), 
-                                 seq(log(1e-10),log(1e-7),length.out = 6),
-                                 max(log(Res_w_1_long$biom))))+ 
+                                 log(1e-10),log(1e-9),log(1e-8),log(5e-8),log(1e-7),log(5e-7),log(1e-6),
+                                 max(log(Res_w_1_long$biom)))) + 
   annotate(geom="text", -Inf, Inf, label="F", hjust = -23, vjust = 3, size= 4, fontface = "bold")+
   scale_fill_manual(values = mycolors, name="Relative densities", 
-                    labels=c(paste("< ",signif(1e-10,2)), 
-                             signif(seq(1e-10,1e-7,length.out = 5),2),
-                             paste(">",signif(max(Res_w_1_long$biom),2)))) + 
+                     labels=c(paste("<",1e-10), 
+                              1e-9,1e-8,5e-8,1e-7,5e-7,1e-6,
+                              paste("<",1))) + 
   scale_y_continuous(name = "Temperature [K]", limits = c(284,294),breaks = seq(285,293,2))+
   scale_x_continuous( name = expression(paste("Mass ",italic("m"["s"])," [g]")), limits = c(0,20000))+
   coord_cartesian(ylim = c(284,294)) +
@@ -235,22 +237,24 @@ Fig3f <-
         panel.grid.minor = element_blank())
 
 ### FIG 2 - SURFACE OF FITNESS OVER TEMP AND KAPPA ####
+
 Fig2 <- 
   as_tibble(Res_lam_1) %>%
-  filter(kappa > 0.69) %>%
+  filter(kappa > 0.65) %>%
   ggplot(., aes(T,kappa)) +
   geom_raster(aes(fill=round(Lambda, 4))) +
   geom_line(data=maxl_1,aes(T,kappa),size=0.85) +
-  scale_fill_gradientn(
-    limits = c(0,max(as.data.frame(Res_lam_1[,'Lambda'])+0.0001)),
+  scale_fill_gradientn( #here Im choosing values for the scale that is within the kappa-temp space that Im plotting
+    limits = c(min(as.data.frame(Res_lam_1[Res_lam_1$kappa>0.65 & Res_lam_1$T<293.5, ][,'Lambda'])),max(as.data.frame(Res_lam_1[,'Lambda']))),
     colours = c("black","white","#f1eef6","#ce1256"),
-    values = rescale(c(0,0.9999,1, round(max(as.data.frame(Res_lam_1[,'Lambda'])), 4)),
+    values = rescale(c(min(as.data.frame(Res_lam_1[Res_lam_1$kappa>0.65 & Res_lam_1$T<293.5, ][,'Lambda'])),0.9999,1, max(as.data.frame(Res_lam_1[,'Lambda']))),
                      to=c(0,1)),
-    breaks = c(0,1,round(max(as.data.frame(Res_lam_1[,'Lambda'])), 2)),
-    labels=c(0,1,round(max(as.data.frame(Res_lam_1[,'Lambda'])),3)),
+    breaks = c(min(as.data.frame(Res_lam_1[Res_lam_1$kappa>0.65 & Res_lam_1$T<293.5, ][,'Lambda'])),1,max(as.data.frame(Res_lam_1[,'Lambda']))),
+    labels=c(round(min(as.data.frame(Res_lam_1[Res_lam_1$kappa>0.65 & Res_lam_1$T<293.5, ][,'Lambda'])), 2),
+             1, round(max(as.data.frame(Res_lam_1[,'Lambda'])),2)),
     name = expression(lambda)) +
   scale_x_continuous(expand = c(0,0), name = "Temperature [K]", breaks = seq(284,292,2), limits = c(283,293.5)) +
-  scale_y_continuous(expand = c(0,0), name=expression(paste(kappa," (Growth allocation)"))) +
+  scale_y_continuous(expand = c(0,0), name=expression(paste(kappa[0]," (Growth allocation)"))) +
   coord_cartesian(xlim = c(283.5,292.5)) +
   theme_bw() +
   theme(panel.grid.major = element_blank(),
@@ -262,17 +266,18 @@ Fig4A <-
 maxl_123 %>%
   ggplot(., aes(T,kappa, linetype = Sur_f)) +
   geom_line(data=maxl_123, aes(T,kappa), size=0.85) +
-  scale_x_continuous(expand = c(0,0), name = "Temperature [K]", breaks = seq(283,294,2), limits = c(284,294.25)) +
-  scale_y_continuous(expand = c(0,0), name=expression(paste(kappa," (Growth allocation)")), limits = c(0.695,1.005))+
+  scale_x_continuous(expand = c(0,0), name = "Temperature [K]", breaks = seq(284,292,2), limits = c(283,293.5)) +
+  scale_y_continuous(expand = c(0,0), name=expression(paste(kappa[0]," (Growth allocation)")), limits = c(0.695,1.005))+
   scale_linetype_manual(values = c("solid","dotdash","dashed"),
                         name= "Survival",
                         labels = c(expression(paste(italic("a"),"(",italic("T,"),italic("m"["s"]),")")),
                                    expression(paste(italic("a"),"(",italic("m"["s"]),")")),
                                    "a=0.68")) +
   annotate(geom="text", -Inf, Inf, label="A", hjust = -2, vjust = 3, size= 4, fontface = "bold") +
-  coord_cartesian(xlim = c(284.25,294)) +
+  coord_cartesian(xlim = c(283.5,292.5)) +
   theme_bw() +
   theme( legend.key.width = unit(1, 'cm')) 
+
 
 ### FIG 4D,B AND C, THREE SURVIVAL SCENARIOS  ####
 # Baseline model survival 4D
@@ -506,14 +511,13 @@ Fig5 <-
   Res_Sens %>%
   mutate(dfun=as.factor(dfun)) %>%
   ggplot(.) +
-  geom_path(aes(Size, Sens, linetype = dfun, color = dfun)) +
+  geom_path(aes(Size, Sens, color = dfun)) +
   facet_grid(Temp~., scales="fixed") +
   xlim(0,20000) +
   geom_vline(xintercept=400, linetype="dashed", size=0.3) +
-  ylab("Sensitivity") +
+  ylab("Sensitivity contribution") +
   xlab("Mass [g]") +
-  scale_color_grey(labels= cont.labs, name= "") +
-  scale_linetype_discrete(labels= cont.labs, name= "") +
+  scale_color_manual(values = c('#E69F00','#000000','#ce1256'), labels= cont.labs, name= "")+
   geom_text(data=s_sum_text, aes(Size, Sens, label = label, 
                               colour=dfun), size=4, show.legend = FALSE) +
   theme_bw() +
@@ -522,7 +526,7 @@ Fig5 <-
         panel.border = element_rect(colour = "black", fill = NA))
 
 #### Write plots to pdf:s ####
-# date <- Sys.Date()
+ date <- Sys.Date()
 # pdf(paste("DEBIPM_fig2_",date,".pdf", sep=""), width = 6, height = 4)
 # Fig2
 # dev.off()
