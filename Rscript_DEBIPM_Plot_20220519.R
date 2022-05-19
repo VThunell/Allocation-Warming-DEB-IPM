@@ -3,7 +3,9 @@
 library(scales)
 library(patchwork) 
 library(grid)   # for viewport()
+library(tidyverse)
 
+YVPike <- load("PikeDataFiles.R")
 #Colorscheme from blue to red scale_color_manual(values = c('#4575b4','#91bfdb','#e0f3f8','#fee090','#fc8d59','#d73027'))+
 
 ## Load in results for Main and Contrast results ####
