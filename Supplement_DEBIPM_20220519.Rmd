@@ -56,8 +56,8 @@ cons_E <- (eps1*x^eps2)*rI_T_Pad(test_Pars['T'])
 
 E_bud <- bind_cols(Size=x,
                    Assimilation = alpha*cons_E,
-                   Maintenance =  rho1*x^rho2*rM_T_AL(test_Pars['T'],x),
-                   Growth =    kap_fun(x,test_Pars["kappa"])*alpha*cons_E - rho1*x^rho2*rM_T_AL(test_Pars['T'],x),
+                   Maintenance =  rho1*x^rho2*rM_T_A(test_Pars['T']),
+                   Growth =    kap_fun(x,test_Pars["kappa"])*alpha*cons_E - rho1*x^rho2*rM_T_A(test_Pars['T']),
                    Reserve = (1-kap_fun(x,test_Pars["kappa"]))*alpha*cons_E )
 
 E_bud_long <- pivot_longer(E_bud, cols = c(2:ncol(E_bud)), names_to = "comp", values_to = "gram")
@@ -93,8 +93,7 @@ Sr <- Srate_long %>%
 ### Plot Temp functions
 Trate <- bind_cols(Temp=273:300,
                    Consumption=rI_T_Pad(273:300),
-                   #Maintenance100=rM_T_AL(273:300, 100),
-                   Maintenance1=rM_T_AL(273:300, 1))
+                   Maintenance1=rM_T_A(273:300))
 Trate_long <- pivot_longer(Trate, cols=c(2:3), names_to = "Rate", values_to = "Effect")
 
 Tr <- Trate_long %>%
@@ -140,7 +139,7 @@ test_Pars <- c(T = 287,
 
 T_rates2 <- NULL
 for(i in Temp) {
-  maint <- rho1*(x^rho2)*rM_T_AL(i, x)
+  maint <- rho1*(x^rho2)*rM_T_A(i)
   intake  <- eps1*(x^eps2)*rI_T_Pad(i) 
   T_rates2 <- 
     rbind(T_rates2,cbind(Temp = i, mass = x, maint, intake, 
@@ -151,7 +150,6 @@ T_rates <- T_rates2 #rbind(T_rates2, T_rates1, T_rates0)
 maxgT<- as.data.frame(T_rates) %>% 
         group_by(mass) %>%
         slice_max(0.35*(intake-maint))
-#plot(maxgT$mass,maxgT$Temp,type="l")
 
 T_rates_long <- pivot_longer(as.tibble(T_rates), 5:6, names_to = "E_type", values_to = "g_day")
 T_rates_long["g_g_day"] <- T_rates_long$g_day/T_rates_long$mass
@@ -178,41 +176,7 @@ Figure S1.2. Energy allocation rate to reproductive reserve (dotted lines) and s
 
 ## S2. Comparison of modeled trajectories of growth and reproduction with data from Windermere pike
 
-We adjust the parameter values of mass dependent consumption and allocation in the DEB model to fit data on the observed growth and fecundity of Windermere pike (see main text for details). Figure S2 shows how our estimates compare with data for mean growth (growth trajectories, Fig. S2A) and variance (Fig. S2C) and reproduction (S2B, fecundity in October-December).
-
-```{r echo=FALSE, warning=FALSE}
-# rlnorm(1, log(traj_Supp[[2,3]]), log(traj_Supp[[3,3]])) 
-# plot(traj_Supp$var~traj_Supp$mass, type="l")
-# plot(GData$Age,ltow(GData$Length))
-# plot(var(ltow(GData$Length)-ltow(GData$Length.prev))~ltow(GData$Length.prev))
-# plot((ltow(GData$Length)-ltow(GData$Length.prev))~ltow(GData$Length))
-# lines(xsd(traj_Supp$mass))
-# GData_no1 <- GData[!GData$Age==1,]
-# GData_no1$massv <- round(ltow(GData_no1$Length))
-# GData_no1$massv.Prev <- round(ltow(GData_no1$Length.prev))
-# 
-# plot((GData_no1$massv-GData_no1$massv.Prev)~GData_no1$massv.Prev)
-# Sizevar <- group_by(GData_no1, massv.Prev) %>%
-#   summarise(sd = sd(massv-massv.Prev)) #%>%
-# plot(Sizevar$sd~GData_no1$massv.Prev)
-# nrow(Sizevar)
-# GData_no1$massv.Prev
-# lines(xsd(x)~x)
-# Sizevar2 <- group_by(GData[!GData$Age==1,], Ind) %>%
-#   summarise(sd = sd(massv-massv.Prev)) #%>%
-# plot(Sizevar$sd~Sizevar$massv.Prev)
-# lines(xsd(x)~x)
-
-# sd_dL.dt <- GData[,c(7,ltow(12))] %>% aggregate(., by = list(.$Age), FUN = sd)
-# plot(u, Asd_dL.dt[u,3], ylim = c(0,5))
-
-#ggplot() +
-# geom_line(data=GData, aes(Age, ltow(Length), group = as.factor(Ind))) +
-# geom_line(aes(mu287[1,], size=1, color = "red")) +
-# theme_bw() +  
- #scale_colour_brewer(palette="Dark2")
-#  scale_color_manual(values = c('#4575b4','#91bfdb','#fee090','#fc8d59','#d73027'), name="Temp [K]")
-```
+We adjust the parameter values of mass dependent consumption and allocation in the DEB model to fit data on the observed growth and fecundity of Windermere pike (see main text for details). The growth data on Windermere pike is based on back-calculated length (Winfield et al. 2013b).  The data on fecundity and growth represents individuals caught between 1944-2003 and therefore encompass a wide temperature range (Winfield et al. 2013, 2013a, 2013b). We convert length to weight based on our estimated length to weight relationship (eq. 11, main text). Figure S2 shows how our estimates compare with data for mean growth (growth trajectories, Fig. S2A) and variance (Fig. S2C) and reproduction (S2B, fecundity in October-December).
 
 ```{r, echo = FALSE, warning = FALSE, fig.height = 5, fig.width = 6}
 groTW <- ggplot(trajG) +
@@ -231,8 +195,6 @@ groTW <- ggplot(trajG) +
 repTW <- ggplot()+
   geom_point(data=FData, aes(Weight, Eggs), alpha=0.1) +
   geom_line(data=as.tibble(rep), size=0.85, aes(mass, fec, color = as.factor(Temp)))+
-#  geom_smooth(data=FData, aes(Weight, Eggs),method=lm, lwd=0.5, linetype="dashed")+  
-  #scale_colour_brewer(palette="Dark2", name = "Temp [K]")+
   scale_color_manual(values = c('#4575b4','#91bfdb','#fee090','#fc8d59','#d73027'), name="Temp [K]")+
   annotate(geom="text", -Inf, Inf, label="B", hjust = -1, vjust = 2, size= 4, fontface = "bold") +
   ylab(expression(paste(italic("f"),"(",italic("m"["s"]),italic(",T"),")"))) +
@@ -264,7 +226,6 @@ ranT <-
  ggplot() +
   geom_line(data=GData, aes(Age, ltow(Length), group = as.factor(Ind), color = "WData")) +
   geom_line(data=ranTraj_long, size=0.5,  aes(age, mass, group = interaction(as.factor(ind), as.factor(TK)), color = as.factor(TK), color="DEB-IPM")) +
-  # scale_linetype_manual(name = '', labels = c("DEB-IPM", 'Wind. data'),  values = c("WData" = "solid" , "DEB-IPM" = "solid")) +
   scale_color_manual(name = '', labels = c("DEB-IPM 287 K","DEB-IPM 291 K","Wind. data"), values = c('#91bfdb','#fc8d59',"black")) +
   ylab(expression(paste(italic("g"),"(",italic("m"["s+1"]),italic(",T"),")"))) +
   xlab("Age [years]") +
@@ -284,22 +245,22 @@ Figure S2. Comparison of the temperature dependent DEB-IPM and data on Windermer
 When analyzing the IPM, the number of size classes in the population (or matrix mesh size) should not affect the estimation of $\lambda$ and stable size structure ($w$). We therefore estimate $\lambda$ for DEB-IPMs with $0<n<2400$ (Fig. S3) to find the minimum number size classes that does not affect $\lambda$ to an accuracy of three decimal points nor the qualitative shape of the $w$.
 
 ```{r, echo = FALSE, warning = FALSE, fig.height = 4, fig.width = 6}
-# ns <- rev(seq(400,2400,200))
-# ts <- c(285,287,289)
-# nlam=data.frame()
-# nwlam=NULL
-# nvlam=list()
-# for(j in ts) {
-#   for(i in ns){
-#       n <- i
-#       x <- seq(mmin,mmax, length=n)
-#       dx <- x[2] - x[1] # step size (grams) in the continuos size
-#       lam <- wvlambda.projection(K.matrix(Pars <- c(T = j,                                           kappa = 0.8, Y = 1) ))
-#       nlam <- rbind(nlam,c(j,i,lam[[1]]))
-#       nwlam <- rbind(nwlam,cbind(j,i,x,lam[[2]][2:nrow(lam[[2]]),]))
-#       #nvlam <- c(nvlam,c(cbind(i,x,lam[[3]])))
-#   }
-# }
+ns <- rev(seq(400,2400,200))
+ts <- c(285,287,289)
+nlam=data.frame()
+nwlam=NULL
+nvlam=list()
+for(j in ts) {
+  for(i in ns){
+      n <- i
+      x <- seq(mmin,mmax, length=n)
+      dx <- x[2] - x[1] # step size (grams) in the continuos size
+      lam <- wvlambda.projection(K.matrix(Pars <- c(T = j,                                           kappa = 0.8, Y = 1) ))
+      nlam <- rbind(nlam,c(j,i,lam[[1]]))
+      nwlam <- rbind(nwlam,cbind(j,i,x,lam[[2]][2:nrow(lam[[2]]),]))
+      #nvlam <- c(nvlam,c(cbind(i,x,lam[[3]])))
+  }
+}
 
 colnames(nlam) <- c("T","n","lambda")
 colnames(nwlam) <- c("T","n","x","w")
@@ -616,35 +577,7 @@ Res_w_2 <- read.delim("//storage-og.slu.se/home$/vitl0001/My Documents/Manus2/Re
 colnames(Res_w_2)[4:ncol(Res_w_2)] <- sub("X", "", colnames(Res_w_2)[4:ncol(Res_w_2)])
 
 Res_w_2_long <- pivot_longer(as.data.frame(Res_w_2), cols = c(4:ncol(Res_w_2)),
-                           names_to = "Size", values_to ="biom") # not use column 4 & 5 (eggstage and recruits)
-
-# FigS6c_1 <- Res_w_2_long %>%
-#   filter(T %in% c(285, 287, 289, 291, 293)) %>%
-#   filter(as.character(kappa) %in% 0.8) %>% #Floating point issue when comparing vector, therefore the use of %in%
-#   ggplot(., aes(as.numeric(Size), biom, group = rev(as.factor(T)), color = as.factor(T))) +
-#   geom_line(size=0.8) +
-#   ylab("Stable structure w") +
-#   xlab(expression(paste("Mass ",italic("m"["s"])," [g]"))) +
-#   ylim(0,6e-7)+
-#   annotate(geom="text", -Inf, Inf, label="C", hjust = -1, vjust = 2, size= 4, fontface = "bold") +
-#   scale_color_manual(values = c('#4575b4','#91bfdb','#fee090','#fc8d59','#d73027'), name="Temp [K]")+
-#   theme_bw() +
-#   #theme(legend.position="none") +
-#   labs(color = "Temp [K]")
-
-# FigS6c_2 <- Res_w_2_long %>%
-#   filter(T %in% c(285, 287, 289, 291, 293)) %>%
-#   filter(as.character(kappa) %in% 0.8) %>% #Floating point issue when comparing vector, therefore the use of %in%
-#   ggplot(., aes(as.numeric(Size), biom, group = rev(as.factor(T)), color = as.factor(T))) +
-#   geom_line(size=0.8)+
-#   ylim(0,5.5e-5)+
-#   scale_x_continuous(breaks = c(0,200,400), limits=c(0,400))+
-#   scale_color_manual(values = c('#4575b4','#91bfdb','#fee090','#fc8d59','#d73027'), name="Temp [K]")+
-#   theme_bw() +
-#   theme(legend.position="none",
-#         axis.title.x=element_blank(),
-#         plot.background = element_rect(fill = "transparent", color = NA), # bg of the plot
-#         axis.title.y=element_blank())
+                           names_to = "Size", values_to ="biom")
 
 FigS6e <- 
   as_tibble(Res_w_2_long) %>%
@@ -667,7 +600,6 @@ FigS6e <-
   theme(panel.grid.major = element_blank(),
         panel.grid.minor = element_blank())
 
-# Res_lam_3 <- read.delim("//storage-og.slu.se/home$/vitl0001/My Documents/Manus2/Results/Results220413/Res_lam_3_2022-04-21.txt", sep = ",")
 maxl_3 <- as.data.frame(Res_lam_3) %>% 
   group_by(T) %>%
   slice_max(Lambda)
@@ -695,41 +627,12 @@ FigS6b <-
   theme(panel.grid.major = element_blank(),
         panel.grid.minor = element_blank())
 
-
 # a=0.68, i.e flat survival scenario
 Res_w_3 <- read.delim("//storage-og.slu.se/home$/vitl0001/My Documents/Manus2/Results/Results220413/Res_w_3_2022-04-21.txt", sep = ",")
 colnames(Res_w_3)[4:ncol(Res_w_3)] <- sub("X", "", colnames(Res_w_3)[4:ncol(Res_w_3)])
 
 Res_w_3_long <- pivot_longer(as.data.frame(Res_w_3), cols = c(4:ncol(Res_w_3)),
-                           names_to = "Size", values_to ="biom") # not use column 4 & 5 (eggstage and recruits)
-
-# FigS6d_1 <- Res_w_3_long %>%
-#   filter(T %in% c(285, 287, 289, 291, 293)) %>%
-#   filter(as.character(kappa) %in% 0.8) %>% #Floating point issue when comparing vector, therefore the use of %in%
-#   ggplot(., aes(as.numeric(Size), biom, group = rev(as.factor(T)), color = as.factor(T))) +
-#   geom_line(size=0.8)+
-#   ylab("Stable structure w")+
-#   xlab(expression(paste("Mass ",italic("m"["s"])," [g]"))) +
-#   ylim(0,6e-6)+
-#   annotate(geom="text", -Inf, Inf, label="D", hjust = -1, vjust = 2, size= 4, fontface = "bold") +
-#   scale_color_manual(values = c('#4575b4','#91bfdb','#fee090','#fc8d59','#d73027'), name="Temp [K]") +
-#   theme_bw() +
-#   labs(color = "Temp [K]")
-
-# FigS6d_2 <- Res_w_3_long %>%
-#   filter(T %in% c(285, 287, 289, 291, 293)) %>%
-#   filter(as.character(kappa) %in% 0.8) %>% #Floating point issue when comparing vector, therefore the use of %in%, can also use near()
-#   ggplot(., aes(as.numeric(Size), biom, group = rev(as.factor(T)), color = as.factor(T))) +
-#   geom_line(size=0.8)+
-#   ylim(0,5.5e-5)+
-#   scale_x_continuous(breaks = c(0,200,400), limits=c(0,400))+
-#   #scale_colour_brewer(palette="Dark2",name = "Temp [K]") +
-#   scale_color_manual(values = c('#4575b4','#91bfdb','#fee090','#fc8d59','#d73027'), name="Temp [K]")+
-#   theme_bw() +
-#   theme(legend.position="none",
-#         axis.title.x=element_blank(),
-#         plot.background = element_rect(fill = "transparent", color = NA), # bg of the plot
-#         axis.title.y=element_blank())
+                           names_to = "Size", values_to ="biom") 
 
 FigS6f <- 
   as_tibble(Res_w_3_long) %>%
@@ -751,7 +654,6 @@ FigS6f <-
   theme(panel.grid.major = element_blank(),
         panel.grid.minor = element_blank())
 
-
 #subvp <- viewport(width = 0.17, height = 0.2, x = 0.28, y = 0.52)
 #subvp2 <- viewport(width = 0.17, height = 0.2, x = 0.78, y = 0.52)
 #subvp <- viewport(width = 0.15, height = 0.18, x = 0.2, y = 0.55)
@@ -772,5 +674,12 @@ Figure S6. Fitness landscape (A,B) with solid line representing the optimal allo
 ## References
 
 Lindmark, M., J. Ohlberger, and A. Gardmark. 2022. Optimum growth temperature declines with body size within fish species. Glob Chang Biol 28:2259-2271.
+
+Winfield, I. J., and J. M. Fletcher. 2013. Windermere lake temperature data 1944-2002. . NERC Environmental Information Data Centre. https://doi.org/10.5285/9520664c-eb4d-4700-b064-5d215d23e595.
+
+Winfield, I. J., J. M. Fletcher, and J. B. James. 2013a. Pike fecundity data 1963-2002., NERC Environmental Information Data Centre. https://doi.org/10.5285/b8886915-14cb-44df-86fa-7ab718acf49a.
+
+Winfield, I. J., J. M. Fletcher, and J. B. James. 2013b. Pike growth data 1944-1995. NERC Environmental Information Data Centre. https://doi.org/10.5285/637d60d6-1571-49af-93f7-24c1279d884d.
+
 
 

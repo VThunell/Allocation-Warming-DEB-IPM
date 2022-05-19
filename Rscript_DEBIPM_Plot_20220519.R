@@ -1,11 +1,10 @@
 ############### THUNELL ET AL. DEBIPM R-script - PLOT #########################
 
-#setwd("C:/Users/vitl0001/VThunell_repos/Temperature-DEBIPM")
 library(scales)
 library(patchwork) 
 library(grid)   # for viewport()
 
-# Colorscheme from blue to red scale_color_manual(values = c('#4575b4','#91bfdb','#e0f3f8','#fee090','#fc8d59','#d73027'))+
+#Colorscheme from blue to red scale_color_manual(values = c('#4575b4','#91bfdb','#e0f3f8','#fee090','#fc8d59','#d73027'))+
 
 ## Load in results for Main and Contrast results ####
 # Results Baseline scenario
@@ -37,43 +36,6 @@ maxl_3["Sur_f"] <- "const_s"
 maxl_123 <- as_tibble(rbind(maxl_1,maxl_2,maxl_3))
 maxl_123$Sur_f <- factor(maxl_123$Sur_f, levels = c("main_s", "tind_s", "const_s"))
 
-
-## Plot Mass and temperature functions ####
-
-## Energy budget over temp and mass ####
-Temp <- 283:294
-T_rates = NULL
-
-for(i in Temp) {
-  maint <- rho1*(x^rho2)*rM_T_AL(i,x)
-  cons  <- eps1*(x^eps2)*rI_T_Pad(i) 
-  T_rates  <- rbind(T_rates,
-                    cbind(Temp = i, mass = x, 
-                          maint, cons, 
-                          growth_E = kap_fun(x,test_Pars["kappa"])*alpha*test_Pars["Y"]*cons - maint, 
-                          repro_E = alpha*test_Pars["Y"]*(1-kap_fun(x,test_Pars["kappa"]))*cons))
-}
-
-T_rates_long <- gather(as.data.frame(T_rates), key = "E_type", value ="g_day", c(5,6)) # gather only column 6,7
-
-## Over mass for three temperatures
-T_rates_long %>%
-  filter( Temp %in% c(285,287,289)) %>%
-  ggplot(.) +
-  geom_line(size=1 , aes(mass, g_day, color = as.factor(Temp), 
-                         linetype = as.factor(E_type))) +
-  theme_bw() +
-  scale_colour_grey()
-  
-## Over temperatures for three sizes
-T_rates_long %>%
-  filter( mass %in% c(x[2], x[20], x[200])) %>%
-  ggplot(.) +
-  geom_line(size=1 , aes(Temp, g_day, color = as.factor(mass), 
-                         linetype = as.factor(E_type))) +
-  theme_bw() +
-  scale_colour_grey()
-
 ### PLOT DEMOGRAPHIC FUNCTIONS FOR IPM (AND FIG. 3A-D)####
 
 ### Plot individual growth, g(m_s+1;m_s,T) via growthfun() ####
@@ -91,7 +53,7 @@ t <- 25
 traj <- data.frame() 
  for(i in 1:length(Temp)){
    traj[1,i] <- x[which.max(age1size(Pars = c(T = Temp[i], kappa = 0.8, Y = 1) ))]
-    for(j in 2:t){ # 20 years of growth
+    for(j in 2:t){ 
       traj[j,i] <- x[which.max(growthfun(traj[j-1,i],Pars = c(T = Temp[i], kappa = 0.8, Y = 1)))]
    }
  }
@@ -101,7 +63,6 @@ trajG <- pivot_longer(traj, cols=c(2:6),names_to = "Temp", values_to = "mass" )
 trajG$Temp <- as.double(trajG$Temp)
 
 groT <- ggplot(trajG) +
-  #geom_point(data=GData, aes(Age, ltow(Length)), alpha=0.1) +
   geom_line(data = trajG, size=0.85, aes(Age, mass, color = as.factor(Temp))) +
   ylab(expression(paste("Mass ", italic("\u03BC")["g"]," [g]"))) +
   xlab("Age [years]") +
@@ -114,7 +75,7 @@ groT <- ggplot(trajG) +
 
 #### Plot size dependent fecundity, f(m_s,T) via repfun() ####
 rep=data.frame()
-for(i in 2:ncol(traj)){ # the temps, from 2nd to 6th column in traj
+for(i in 2:ncol(traj)){ # the temps, from 2nd last column in traj
   for(j in 1:nrow(traj)){ # the sizes in traj, i.e. Age traj
     if(traj$Age[j]==1){
       rep_tplus1 <- cbind(traj[j,i], repfun(e_m, c(T = Temp[i-1], kappa = kappp, Y = 1)), Temp[i-1], kappp, "Y"=1)} 
@@ -125,7 +86,6 @@ for(i in 2:ncol(traj)){ # the temps, from 2nd to 6th column in traj
 }
 
 repT <- ggplot() +
-  #geom_point(data=FData, aes(Weight, Eggs), alpha=0.1)+
   geom_line(data=as_tibble(rep), size=0.85, aes(mass, fec, color = as.factor(Temp)))+
   scale_color_manual(values = c('#4575b4','#91bfdb','#fee090','#fc8d59','#d73027'), name="Temp [K]")+
   annotate(geom="text", -Inf, Inf, label="B", hjust = -2, vjust = 3, size= 4, fontface = "bold") +
@@ -133,15 +93,11 @@ repT <- ggplot() +
   xlab(expression(paste("Mass ",italic("m")[s]," [g]"))) +
   theme_bw()
 
-groT+repT
-
 #### Plot Age 1 size distribution, o(e_m,T) via age1size() ####
 T_o <- NULL
 xT_o <- 1:500
 for(i in seq(285,293,2)){
-  T_o_pars <- c(T = i,     # parameters for Temperature, feeding, allocation and Mass dependence
-                 kappa = 0.8, # allocation to respiration (Growth and maintenance)
-                 Y=1)         # Feeding level
+  T_o_pars <- c(T = i, kappa = 0.8, Y=1)
   T_o <- as.data.frame(rbind(T_o, c(T_o_pars, age1size(T_o_pars, y=xT_o))))
 }
 colnames(T_o)[4:ncol(T_o)] <- xT_o
@@ -260,7 +216,6 @@ Fig2 <-
   theme(panel.grid.major = element_blank(),
         panel.grid.minor = element_blank())
 
-
 ### FIG 4A - OPTIMAL KAPPA FOR THREE SURVIVAL SCENARIOS ####
 Fig4A <- 
 maxl_123 %>%
@@ -280,10 +235,10 @@ maxl_123 %>%
 
 
 ### FIG 4D,B AND C, THREE SURVIVAL SCENARIOS  ####
-# Baseline model survival 4D
-survfun <- function(m, Pars) { # Mass-Temp dependence of yearly Mortality 
-  Vsurvfun <- function(m, z=10.34){ # temperature independent survival function
-    sxV <- function(m, z=10.34){ # sx from Vindenes 2014
+# Defnie survfun for plots, first Baseline model survival 4D
+survfun <- function(m, Pars) { 
+  Vsurvfun <- function(m, z=10.34){ 
+    sxV <- function(m, z=10.34){
       1/(1+exp(13.53316 - 0.50977*wtol(m) - (-0.00393)
                *wtol(m)^2 - 0.19312*z - (-0.00679)
                *wtol(m)*z))
@@ -291,9 +246,9 @@ survfun <- function(m, Pars) { # Mass-Temp dependence of yearly Mortality
     xmax <- x[which(sxV(x) == max(sxV(x)))]
     ifelse(m < xmax, sxV(m), sxV(xmax))
   }
-  VsurvfunT <- function(m, Pars){ # temperature dependent survival function
-    zT=10.34+Pars[["T"]]-287 # make 287 equal to 283 survival in Vindenes 2014 since 283 is yearly mean Temp 287 is summer mean temp
-    sxV <- function(m, z=zT){ # sx from Vindenes 2014
+  VsurvfunT <- function(m, Pars){ 
+    zT=10.34+Pars[["T"]]-287 
+    sxV <- function(m, z=zT){ 
       1/(1+exp(13.53316 - 0.50977*wtol(m) - (-0.00393)
                *wtol(m)^2 - 0.19312*z - (-0.00679)
                *wtol(m)*z))
@@ -331,7 +286,7 @@ Fig4D <-
   theme_bw() +
   theme( legend.key.width = unit(1, 'cm') ) 
 
-# Temperature independent version of Vindenes et al. 2014
+# Define survfun for Temperature independent version of Vindenes et al. 2014
 survfun <- function(m, Pars) { # Mass-Temp dependence of yearly Mortality 
   Vsurvfun <- function(m, z=10.34){ # temperature independent survival function
     sxV <- function(m, z=10.34){ # sx from Vindenes 2014
@@ -414,9 +369,7 @@ survfun <- function(m, Pars) { # Mass-Temp dependence of yearly Mortality
 
 Tsur <- NULL
 for(i in seq(285,293,2)){
-  Tsur_pars <- c(T = i,     # parameters for Temperature, feeding, allocation and Mass dependence
-                 kappa = test_Pars[["kappa"]], # allocation to respiration (Growth and maintenance)
-                 Y=test_Pars[["Y"]])
+  Tsur_pars <- c(T = i, kappa = test_Pars[["kappa"]], Y=test_Pars[["Y"]])
   Tsur <- as.data.frame(rbind(Tsur, c(Tsur_pars,survfun(x, Tsur_pars))))
 }
 colnames(Tsur)[4:ncol(Tsur)] <- c(x)
