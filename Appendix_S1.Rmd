@@ -17,23 +17,23 @@ setwd("C:/Users/vitl0001/VThunell_repos/Temperature-DEBIPM")
 library(patchwork) 
 ```
 
-1. Department of Aquatic Resources (SLU Aqua), Swedish University of Agricultural Sciences, Box 7018, 750 07 Uppsala, Sweden
+1. Department of Aquatic Resources, Swedish University of Agricultural Sciences, Box 7018, 750 07 Uppsala, Sweden
 
 2. Centre for Ecological and Evolutionary Synthesis (CEES), Department of Biosciences, University of Oslo, 0316 Oslo, Norway
 
 \* Author to whom correspondence should be addressed. Current address:
-Viktor Thunell, 1. Department of Aquatic Resources (SLU Aqua), Swedish University of Agricultural Sciences, Box 7018, 750 07 Uppsala, Sweden. Tel.: +46(0)104784111, email: viktor.thunell@slu.se
+Viktor Thunell, 1. Department of Aquatic Resources (SLU Aqua), Swedish University of Agricultural Sciences, Box 7018, 750 07 Uppsala, Sweden. Email: viktor.thunell@slu.se
 
 
 # Table of contents
 
-S1. Effects of size and temperature on maintenance, consumption, allocation and energy budget.
+S1. Size and temperature dependent maintenance, consumption, allocation and their effects on the energy budget.
 
-S2. Comparison of modeled trajectories of growth and reproduction with data from Windermere pike.
+S2. Fitting the DEB-model at mean temperature to data on size at age and reproduction in Windermere pike.
 
-S3.  Effect of number of size classes on long-term population growth rate ($\lambda$) and stable population size structure ($w$).
+S3. Effects of mass-independent energy allocation on the DEB and modeled size at age and fecundity.
 
-S4.  Effects of hyperallometric scaling of energy allocation to reproduction on energy budget, growth and reproduction of Windermere Pike.
+S4. Effect of number of size classes on long-term population growth rate ($\lambda$) and stable population size structure ($w$).
 
 S5. Sensitivity analysis of long-term population growth rate ($\lambda$) to $\kappa_0$: Methods and analytical decomposition into contributions from demographic functions.
 
@@ -43,17 +43,17 @@ S7. Fitness landscape and stable size structure for survival probability contras
 
 \newpage
 
-## S1. Effects of size and temperature on maintenance, consumption, allocation and energy budget
+## S1. Size and temperature dependent maintenance, consumption, allocation and their effects on the energy budget.
 
-### S1.1. Effects of mass and temperature on maintenance and consumption
+### S1.1. Size and temperature dependent maintenance and consumption and the energy budget
 
-The effects of mass and temperature on maintenance and consumption in combination with mass dependent allocation determine somatic growth and reproductive reserve in the Dynamic Energy Budget Integral Projection Model (DEB-IPM, Fig S1.1). In the DEB-part, the effect of mass on maintenance and consumption is modeled using a power function (Fig S1.1a), the interacting effects of temperature and mass (equation 3, main text) on maintenance rate is exponential (Fig S1.1b) and the effect of temperature on consumption rate is unimodal (Fig S1.1b, solid line). We assume allocation to reproductive reserve to increase with mass according to data (nearly linearly, see S2) and not with consumption rate (which is sub-linear). This means that $\kappa_0$ (modeled as a function of mass, $\kappa(m)$) decreases with mass (Fig. S1.1c). The resulting DEB, which includes assimilation efficiency ($\alpha =0.4$), thus describes the proportion of consumed energy that each compartment use up (Fig S1.1d).
+The effects of mass and temperature on maintenance and consumption in combination with mass dependent allocation determine somatic growth and reproductive reserve in the Dynamic Energy Budget Integral Projection Model (DEB-IPM, Fig. S1.1). In the DEB-part, the effect of mass on maintenance and consumption is modeled using a power function (Fig. S1.1a), the interacting effects of temperature and mass (equation 3, main text) on maintenance rate is exponential (Fig. S1.1b) and the effect of temperature on consumption rate is unimodal (Fig. S1.1b, solid line). We assume allocation to reproductive reserve to increase with mass according to data (nearly linearly, see S2) and not with consumption rate (which is sub-linear). This means that allocation to growth ($\kappa(m)$ with a mass intercept $\kappa_0$) decreases with mass (Fig. S1.1c). The resulting DEB, which includes assimilation efficiency ($\alpha =0.4$), thus describes the proportion of consumed energy that each compartment use up (Fig. S1.1d).
 
 ```{r, echo = FALSE, warning = FALSE}
 test_Pars <- c(T = 287,   # Temperature
              kappa = deb.optim$par[1], # allocation to Growth and maintenance
              Y = 1)       # Feeding level
-kap_fun <- function(m, kappa, ha=deb.optim$par[2]){kappa*exp(-m/(ha*max(x)))} #for body size dep. kappa
+
 cons_E <- (eps1*x^eps2)*rC_T_Pad(test_Pars['T'])
 
 E_bud <- bind_cols(Size=x,
@@ -65,15 +65,16 @@ E_bud <- bind_cols(Size=x,
 E_bud_long <- pivot_longer(E_bud, cols = c(2:ncol(E_bud)), names_to = "comp", values_to = "gram")
 E_bud_long$comp <- factor(E_bud_long$comp, levels=c( "Reserve", "Growth", "Maintenance", "Assimilation") )
 
-Eb<-E_bud_long %>%
+Eb <- E_bud_long %>%
   ggplot() +
   geom_area(aes(Size, gram, fill = comp)) +
-  coord_cartesian(xlim = c(min(x),max(x))) +
+  coord_cartesian(xlim = c(min(x),18000)) +
   scale_fill_manual(values = c( "#252525", "#cccccc", "#969696", "#636363" ), name="Compartment") +
-  annotate(geom="text", -Inf, Inf, label="d", hjust = -1, vjust = 2, size= 4, fontface = "bold") +
   xlab("Mass [g]" ) +
   ylab("Energy [g]" ) +
-  theme_light()
+  ggtitle('(d)') +
+  theme_light(base_size=9) +
+  theme(plot.title = element_text(size = 9, face = "bold")) 
 
 ### Plot Size functions
 Srate <- bind_cols(Size=x,
@@ -85,12 +86,13 @@ Sr <- Srate_long %>%
   ggplot() +
   geom_line(aes(Size, Effect, linetype = Rate), size=0.8) +
   scale_x_continuous(expand = c(0,0), name = "Mass [g]", limits = c(0,20000), breaks = seq(0,20000,5000)) +
-  annotate(geom="text", -Inf, Inf, label="a", hjust = -1, vjust = 2, size= 4, fontface = "bold") +
   scale_linetype_manual(values = c("solid","dashed"),
                         labels = c("Consumption","Maintenenance")) +
   ylab("Effect [g/day]") +
-  theme_light() +
-  theme(legend.position="none")
+  ggtitle('(a)') +
+  theme_light(base_size=9) +
+  theme(plot.title = element_text(size = 9, face = "bold"), 
+        legend.position="none")
 
 ### Plot Temp functions
 Trate <- bind_cols(Temp=273:300,
@@ -102,11 +104,11 @@ Tr <- Trate_long %>%
 ggplot() +
   geom_line(aes(Temp, Effect, linetype = Rate), size=0.8) +
   scale_x_continuous(expand = c(0,0), name = "Temperature [K]", limits = c(274,300), breaks = seq(275,300,5))+
-  annotate(geom="text", -Inf, Inf, label="b", hjust = -1, vjust = 2, size= 4, fontface = "bold") +
-  scale_linetype_manual(values = c("solid","dashed"),
-                        labels = c("Consumption","Maintenenance")) +
+  scale_linetype_manual(values = c("solid","dashed"), labels = c("Consumption","Maintenenance")) +
   ylab("") +
-  theme_light()
+  ggtitle('(b)') +
+  theme_light(base_size=9) +
+  theme(plot.title = element_text(size = 9, face = "bold")) 
 
 Kf_long <- rbind( tibble(Size=x, val = 1-kap_fun(x,kappa=deb.optim$par[1]), k="Rep. reserve"),
   tibble(Size=x, val=kap_fun(x,kappa=deb.optim$par[1]), k="Growth"))
@@ -115,10 +117,12 @@ ggplot(Kf_long) +
   geom_line( aes(Size, val, color=k), size=0.8, ) +
   ylab(expression(paste("Allocation,", italic(" k(m)"),))) +
   scale_color_manual(values = c( "#cccccc" ,"#252525" ), name="") +
-  scale_x_continuous(expand = c(0,0), name = "Mass [g]", limits = c(0,20000),                     breaks = seq(0,20000,5000)) +
-  annotate(geom="text", -Inf, Inf, label="c", hjust = -1, vjust = 3, size= 4, fontface = "bold") +
-  theme_light() +
-  theme(legend.position="none")
+  scale_x_continuous(expand = c(0,0), name = "Mass [g]", limits = c(0,20000), breaks = seq(0,20000,5000)) +
+  ggtitle('(c)') +
+  theme_light(base_size=9) +
+  theme(plot.title = element_text(size = 9, face = "bold"),
+        legend.position="none",
+        legend.key.width = unit(1, 'cm')) 
 ```
 
 ```{r, echo = FALSE, warning = FALSE, fig.height = 4, fig.width = 6}
@@ -148,12 +152,12 @@ for(i in Temp) {
                          growth_E = kap_fun(x,test_Pars["kappa"])*alpha*test_Pars["Y"]*intake - maint,
                          repro_E = alpha* test_Pars["Y"]*(1-kap_fun(x,test_Pars["kappa"]))*intake))
   }
-T_rates <- T_rates2 #rbind(T_rates2, T_rates1, T_rates0)
+T_rates <- T_rates2 
 maxgT<- as.data.frame(T_rates) %>% 
         group_by(mass) %>%
         slice_max(0.35*(intake-maint))
 
-T_rates_long <- pivot_longer(as.tibble(T_rates), 5:6, names_to = "E_type", values_to = "g_day")
+T_rates_long <- pivot_longer(as_tibble(T_rates), 5:6, names_to = "E_type", values_to = "g_day")
 T_rates_long["g_g_day"] <- T_rates_long$g_day/T_rates_long$mass
 
 
@@ -164,11 +168,10 @@ T_rates_long %>%
                          linetype = as.factor(E_type))) +
     scale_color_manual(values = c( "#252525", "#636363", "#969696", "#cccccc" ), name = "Mass [g]", labels = round(c(T_rates_long$mass[c(5,50,500,5000)]))) +
     scale_linetype_manual(values = c(  "solid", "dotted"), name = "Compartment", labels = c( "Growth", "Rep. reserve")) +
-#    facet_wrap(~cIa, labeller = label_both) +
     ylab("Allocation rate [g/day]") +
     xlab("Temperature [K]") +
     ylim(0,NA)+
-    theme_light() #+
+    theme_light(base_size=9)
   
 ```
 
@@ -176,39 +179,17 @@ Figure S1.2. Energy allocation rate to reproductive reserve (dotted lines) and s
 
 \newpage
 
-## S2. Comparison of modeled trajectories of growth and reproduction with data from Windermere pike
+## S2. Fitting the DEB-model at mean temperature to data on size at age and reproduction in Windermere pike
 
-We adjust the parameter values of mass dependent consumption and allocation in the DEB model to fit data on the observed growth and fecundity of Windermere pike (see main text for details). The growth data on Windermere pike is based on back-calculated length (Winfield et al. 2013b).  The data on fecundity and growth represents individuals caught between 1944-2003 and therefore encompass a wide temperature range (Winfield et al. 2013, 2013a, 2013b). We convert length to weight based on our estimated length to weight relationship (eq. 11, main text). Figure S2 shows how our estimates compare with data for the mean (growth trajectories, Fig. S2a) and variance (Fig. S2c) of growth and of reproduction (S2b, fecundity in October-December).
+Four parameters in the DEB ($\epsilon_{1,2}$ and $\kappa_{0,m}$) are free and we estimated their values by numerical optimization of the DEB-function to fit observed size at age and fecundity of Windermere pike. The size at age data on Windermere pike is based on back-calculated length (Winfield et al. 2013b). The data on fecundity represents individuals caught between 1963-2003 and for growth 1944-2003 and therefore encompass a wide temperature range (Winfield et al. 2013, 2013a, 2013b). We wish to reduce such variation to get closer to average fecundity and growth trajectories at mean temperature (287 K) as we add temperature effects in the DEB via consumption and maintenance. Therefore we removed data on individuals that experienced high or low growing season temperatures (April-September, single seasons for fecundity and mean life time temperature for somatic growth). We removed data with temperatures from the first and fourth quartile of the growing season temperature range leaving 16191 of 34215 size at age measurements (3573 of 7939 individual growth trajectories) and 1139 of 3696 individuals measured for fecundity. The difference between parameter estimates using the selected data and all data was $0$ for $\epsilon_1$, $0.38$ for $\epsilon_2$, $-0.01$ for $\kappa_0$ and $0$ for $\kappa_m$.
 
-```{r, echo = FALSE, warning = FALSE, fig.height = 5, fig.width = 6}
-for(i in 1:nrow(data.g)){ # sorry  for the slow loop, its to get age from years (from back calculated data)
-  data.g$Age[i] <- 
-    (data.g[i,]$Year)-min(data.g[data.g$Ind==data.g[i,"Ind"], ]$Year)+1
-}
-data.f$Egg_mass <- data.f$Egg_number*data.f$Egg_weight
+We convert length to weight based on our estimated length to weight relationship (eq. 11, main text). Fig. S2 shows how our estimates compare with data for the mean (growth trajectories, Fig. S2a) and variance (Fig. S2c) of growth and of reproduction (S2b, fecundity measured in October-December) at mean temperature (287 K).
 
-groTW <- ggplot(trajG) +
-  geom_point(data=data.g, aes(Age, ltow(Length)), alpha=0.1) +
-  geom_line(data = trajG, size=0.85, aes(Age, mass, color = as.factor(Temp))) +
-  ylab(expression(paste("Mass ", italic("\u03BC")["g"]," [g]"))) +
-  xlab("Age [years]") +
-  xlim(0,20)+
-  ylim(0,20000)+
-  annotate(geom="text", -Inf, Inf, label="a", hjust = -1, vjust = 2, size= 4, fontface = "bold")+
-  theme_light() +
-  scale_color_manual(values = c('#4575b4','#91bfdb','#fee090','#fc8d59','#d73027'), name="Temp [K]")+
-  theme(legend.position="none")
-#groT
+For the optimization of free parameters, we used package optimParalell() (a parallel core wrapper for "optim()") in R using the "L-BFGS-B" algorithm (Byrd et. al. 1995). For starting values in the optimization, we use values that provides visually good fits of the model to the data and are reasonable for fish: $\epsilon_1=1$, $\epsilon_2=0.5$, $\kappa_0=0.8$ and $\kappa_m=2$. We calculated confidence intervals from 1000 bootstrap estimates of the modeled data.
 
-repTW <- ggplot()+
-  geom_point(data=data.f, aes(ltow(Length), Egg_mass/e_m), alpha=0.1) +
-  geom_line(data=as.tibble(rep), size=0.85, aes(mass, fec, color = as.factor(Temp))) +
-  scale_color_manual(values = c('#4575b4','#91bfdb','#fee090','#fc8d59','#d73027'), name="Temp [K]")+
-  annotate(geom="text", -Inf, Inf, label="b", hjust = -1, vjust = 2, size= 4, fontface = "bold") +
-  ylab(expression(paste(italic("f"),"(",italic("m"["s"]),italic(",T"),")"))) +
-  xlab(expression(paste("Mass ",italic("m")[s]," [g]"))) +
-  theme_light()
+\newpage
 
+```{r, echo = FALSE, warning = FALSE, fig.height = 4, fig.width = 6}
 a <- data.frame() # 10 individual growth traj, 20+1 years of growth
 for(i in 1:10){ 
   a[i,1] <- sample(x = x, size = 1 , replace = TRUE, prob = age1size(test_Pars))
@@ -233,38 +214,84 @@ ranTraj_long <- pivot_longer(ranTraj, cols=3:12, names_to = "ind", values_to = "
 ranT <- 
  ggplot() +
   geom_line(data=data.g, aes(Age, ltow(Length), group = as.factor(Ind), color = "WData")) +
-  geom_line(data=ranTraj_long, size=0.5,  aes(age, mass, group = interaction(as.factor(ind), as.factor(TK)), color = as.factor(TK), color="DEB-IPM")) +
+  geom_line(data=ranTraj_long, size=0.4,  aes(age, mass, group = interaction(as.factor(ind), as.factor(TK)), color = as.factor(TK), color="DEB-IPM")) +
   scale_color_manual(name = '', labels = c("DEB-IPM 287 K","DEB-IPM 291 K","Wind. data"), values = c('#91bfdb','#fc8d59',"black")) +
   ylab(expression(paste(italic("g"),"(",italic("m"["s+1"]),italic(",T"),")"))) +
   xlab("Age [years]") +
-    annotate(geom="text", -Inf, Inf, label="c", hjust = -1, vjust = 2, size= 4, fontface = "bold") +
-  theme_light()
-
-(groTW + repTW)/ranT
-
+  ggtitle('(c)') +
+  theme_light(base_size=9) +
+  theme(plot.title = element_text(size = 9, face = "bold"),
+        legend.key.width = unit(1, 'cm')) 
 ```
 
-Figure S2. Comparison of the temperature dependent DEB-IPM and data on Windermere pike (black points in a and b and lines in c). Effects of size and temperature on demographic functions in the DEB-IPM for $\kappa_0=0.8$ (i.e. 80 % of daily assimilated energy is allocated to growth and maintenance): mean size at age (a) and size specific fecundity (eggs produced in year s+1 by individuals of size  $m_s$ in year s) (b). Growth trajectories (c) are based on individual back calculated growth from wing bones from Windermere (black) and 10 random growth trajectories produced by the DEB-IPM at 287 K (blue) and 291 K (orange).
+```{r, echo = FALSE, warning = FALSE, fig.height = 5, fig.width = 7}
+load("optim.data.RData")
+
+gci <- as_tibble(optim.data$gci,c(20000,20000))
+colnames(gci) = c("low","high")
+
+fci <- as_tibble(optim.data$fci,c(20000,20000))
+colnames(fci) = c("low","high")
+
+gro <- 
+ggplot() +
+  geom_point(data = optim.data$growthTemp_select, aes(Age, mass), alpha=0.2) +
+  geom_point(data = data.g, aes(Age, ltow(Length)), alpha=0.2, shape=4) +
+  geom_line(data = optim.data$out.optim$g, size=0.85, aes(Age, Mass, color = "#91bfdb")) +
+  geom_ribbon(data = gci, aes(x = 1:(nrow(gci)), ymin = low, ymax = high), fill = "grey", alpha=0.5) +
+  ylab(expression(paste(italic("g"),"(",italic("m"["s+1"]),italic(",T"),")"))) +
+  xlab("Age [years]") +
+scale_color_manual(values = c('#91bfdb'), name="Temp [K]")+
+  ggtitle('(a)') +
+  theme_light(base_size=9) +
+  theme(plot.title = element_text(size = 9, face = "bold"),
+        legend.position="none",
+        legend.key.width = unit(1, 'cm'))   
+
+rep <- 
+ggplot() +
+  geom_point(data=optim.data$fecTemp_select, aes(mass, Egg_number*Egg_weight/e_m), alpha=0.2) +
+  geom_point(data=data.f, aes(ltow(Length), Egg_number*Egg_weight/e_m), alpha=0.2, shape=4) +
+  geom_line(data = optim.data$out.optim$f, aes(mass, fecund), color = "#91bfdb", size=0.85) +
+  geom_ribbon(data = fci, aes(x = optim.data$out.optim$f$mass, ymin = low, ymax = high), fill = "grey", alpha=0.5) +
+  ylab(expression(paste(italic("f"),"(",italic("m"["s"]),italic(",T"),")"))) +
+  xlab(expression(paste("Mass ",italic("m")[s]," [g]"))) +
+  ggtitle('(b)') +
+  theme_light(base_size=9) +
+  theme(plot.title = element_text(size = 9, face = "bold"),
+        legend.position="none",
+        legend.key.width = unit(1, 'cm'))   
+  
+(gro + rep) / ranT 
+```
+
+Figure S2. Comparison of the temperature dependent DEB-IPM and data on Windermere pike. Circles in a and b are data points used for parameter  optimization (crosses are removed data, see text) and lines in c) correspond to individual growth trajectories (all data). The predicted mean size at age (a, shaded line area are confidence intervals from 1000 bootstrap estimates) and size specific fecundity (b, eggs produced in year s+1 by individuals of size  $m_s$ in year s) in the DEB-IPM represent $\kappa_0=0.89$ (i.e. 89 % of daily assimilated energy is allocated to growth and maintenance). Indvidual growth trajectories in c) (black, corresponds to point data in a) are based on individual back calculated growth from wing bones from Windermere pike and 10 random growth trajectories produced by the DEB-IPM at 287 K (blue) and 291 K (orange).
 
 \newpage
 
-## SX Effects hyperallometric scaling of energy allocation to reproduction
+## S3. Effects of mass-independent energy allocation
 
-The standard DEB-model assumes that energy allocation is independent of size. Below, we show how our assumption that allocation to reproductive reserve increases with mass compares to the standard DEB-model. This means that $\kappa_0$ (modeled as a function of mass, $\kappa(m)$) decreases with mass (Fig. S1.1c). The resulting DEB, which includes assimilation efficiency ($\alpha =0.4$), thus describes the proportion of consumed energy that each compartment use up (Fig S1.1d).
+The standard DEB-model assumes that energy allocation is independent of body mass, i.e. $\kappa$ is constant. Below we show the basis for our assumption that allocation to reproductive reserve increases with body mass (at the cost of somatic growth). 
 
-```{r, echo = FALSE, warning = FALSE}
-test_Pars <- c(T = 287,   # Temperature
-             kappa = deb.optim$par[1], # allocation to Growth and maintenance
-             Y = 1)       # Feeding level
+We evaluated the energy budget over size and the modeled growth trajectories (mean size at age) and size specific fecundity for the mass dependent and energy allocation and  the standard DEB-model. We visually compared the growth trajectories and size dependent fecundity based on parameter estimates from the optimization procedure described in Section S2 assuming either a mass-dependent (eq. 5 main text, Fig. S2a, b) or independent (constant $\kappa$, Fig. S3.1 and 2) allocation. 
+The main difference between the two energy allocation assumptions in terms of how they compare to data on Windermere Northern pike is that the mass independent energy allocation overestimates fecundity for smaller individuals and underestimates fecundity for larger sizes. Based on this difference we choose the mass dependent allocation for the model in the main text. 
+
+
+```{r, echo = FALSE, warning = FALSE, fig.height = 2, fig.width = 6}
 kap_fun <- function(m, kappa, ha=deb.optim$par[2]){kappa} #for body size indep. kappa
 
-cons_E <- (eps1*x^eps2)*rC_T_Pad(test_Pars['T'])
+test_Pars_mi =  c(T = 287, kappa = 0.8254219, Y = 1)
+
+eps1=1.2356264 
+eps2=0.4394062
+
+cons_E <- (eps1*x^eps2)*rC_T_Pad(test_Pars_mi['T'])
 
 E_bud <- bind_cols(Size=x,
                    Assimilation = alpha*cons_E,
-                   Maintenance =  rho1*x^rho2*rM_T_A(test_Pars['T']),
-                   Growth =    kap_fun(x,test_Pars["kappa"])*alpha*cons_E - rho1*x^rho2*rM_T_A(test_Pars['T']),
-                   Reserve = (1-kap_fun(x,test_Pars["kappa"]))*alpha*cons_E )
+                   Maintenance =  rho1*x^rho2*rM_T_A(test_Pars_mi['T']),
+                   Growth =    kap_fun(x,test_Pars_mi["kappa"])*alpha*cons_E - rho1*x^rho2*rM_T_A(test_Pars_mi['T']),
+                   Reserve = (1-kap_fun(x,test_Pars_mi["kappa"]))*alpha*cons_E )
 
 E_bud_long <- pivot_longer(E_bud, cols = c(2:ncol(E_bud)), names_to = "comp", values_to = "gram")
 E_bud_long$comp <- factor(E_bud_long$comp, levels=c( "Reserve", "Growth", "Maintenance", "Assimilation") )
@@ -274,155 +301,167 @@ Eb_const<-E_bud_long %>%
   geom_area(aes(Size, gram, fill = comp)) +
   coord_cartesian(xlim = c(min(x),max(x))) +
   scale_fill_manual(values = c( "#252525", "#cccccc", "#969696", "#636363" ), name="Compartment") +
-  annotate(geom="text", -Inf, Inf, label="b", hjust = -2, vjust = 3, size= 4, fontface = "bold") +
   xlab("Mass [g]" ) +
   ylab("Energy [g]" ) +
-  theme_light()
+  ggtitle('(b)') +
+  theme_light(base_size=9) +
+  theme(plot.title = element_text(size = 9, face = "bold"),
+        legend.key.width = unit(1, 'cm')) 
 
-Kf_long <- rbind( tibble(Size=x, val = 1-kap_fun(x,kappa=deb.optim$par[1]), k="Rep. reserve"),
+Kf_long <- rbind( tibble(Size=x, val = 1-kap_fun(x,kappa=test_Pars_mi["kappa"]), k="Rep. reserve"),
   tibble(Size=x, val=kap_fun(x,kappa=deb.optim$par[1]), k="Growth"))
 
 Kf_const <-
 ggplot(Kf_long) +
-  geom_line( aes(Size, val, color=k), size=0.8, ) +
+  geom_line( aes(Size, val, color=k), size=0.8) +
   ylab(expression(paste("Allocation,", italic(" k(m)"),))) +
   scale_color_manual(values = c( "#cccccc" ,"#252525" ), name="") +
-  scale_x_continuous(expand = c(0,0), name = "Mass [g]", limits = c(0,20000),                     breaks = seq(0,20000,5000)) + 
-  annotate(geom="text", -Inf, Inf, label="a", hjust = -2, vjust = 3, size= 4, fontface = "bold") +
-  theme_light() +
-  theme(legend.position="none")
+  scale_x_continuous(expand = c(0,0), name = "Mass [g]", limits = c(0,20000),breaks = seq(0,20000,5000)) + 
+  ggtitle('(a)') +
+  theme_light(base_size=9) +
+  theme(plot.title = element_text(size = 9, face = "bold"),
+        legend.position="none") 
+
+Kf_const + Eb_const
 ```
 
-```{r, echo = FALSE, warning = FALSE}
-kappp = deb.optim$par[1]
+Figure S3.1. Effects of a mass independent energy allocation (a, constant $\kappa$) on the energy budget (b, compare to Fig. S1.1c and d).
+
+```{r, echo = FALSE, warning = FALSE, fig.height = 3, fig.width = 6}
 Temp <- seq(285,293,2)
 t <- 25
 
-traj=NULL
-traj <- data.frame() 
+traj = data.frame() 
  for(i in 1:length(Temp)){
-   traj[1,i] <- x[which.max(age1size(Pars = c(T = Temp[i], kappa = deb.optim$par[1], Y = 1) ))]
+   traj[1,i] <- x[which.max(age1size(Pars = c(T = Temp[i], kappa = test_Pars_mi[["kappa"]], Y = 1) ))]
     for(j in 2:t){ 
-      traj[j,i] <- x[which.max(growthfun(traj[j-1,i],Pars = c(T = Temp[i], kappa = deb.optim$par[1], Y = 1)))]
+      traj[j,i] <- x[which.max(growthfun(traj[j-1,i], ratefun(traj[j-1,i], Pars = c(T = Temp[i], kappa = test_Pars_mi[["kappa"]], Y = 1)),
+                                         Pars = c(T = Temp[i], kappa = test_Pars_mi[["kappa"]], Y = 1)))]
    }
  }
 colnames(traj) <- Temp[1:5]
 traj<-cbind(Age=1:nrow(traj),traj)
-trajG <- pivot_longer(traj, cols=c(2:6),names_to = "Temp", values_to = "mass" )
-trajG$Temp <- as.double(trajG$Temp)
+trajG_mi <- pivot_longer(traj, cols=c(2:6),names_to = "Temp", values_to = "mass" )
+trajG_mi$Temp <- as.double(trajG_mi$Temp)
 
-groT_const <- ggplot(trajG) +
+groT_const <- ggplot(trajG_mi) +
   geom_point(data=data.g, aes(Age, ltow(Length)), alpha=0.1) +
-  geom_line(data = trajG, size=0.85, aes(Age, mass, color = as.factor(Temp))) +
+  geom_line(data = trajG_mi, size=0.85, aes(Age, mass, color = as.factor(Temp))) +
   ylab(expression(paste("Mass ", italic("\u03BC")["g"]," [g]"))) +
   xlab("Age [years]") +
-  xlim(0,20)+
-  ylim(0,max(trajG$mass))+
-  annotate(geom="text", -Inf, Inf, label="c", hjust = -2, vjust = 3, size= 4, fontface = "bold")+
-  theme_light() +
-  scale_color_manual(values = c('#4575b4','#91bfdb','#fee090','#fc8d59','#d73027'), name="Temp [K]")+
-  theme(legend.position="none")
+  xlim(0,20) +
+  ylim(0,20000) +
+  scale_color_manual(values = c('#4575b4','#91bfdb','#fee090','#fc8d59','#d73027'), name="Temp [K]") +
+ggtitle('(a)') +
+  theme_light(base_size=9) +
+  theme(plot.title = element_text(size = 9, face = "bold"),
+        legend.position="none",
+        legend.key.width = unit(1, 'cm')) 
 
 #### Plot size dependent fecundity, f(m_s,T) via repfun() ####
-rep=NULL
-rep=data.frame()
+rep_mi=data.frame()
 for(i in 2:ncol(traj)){ # the temps, from 2nd last column in traj
   for(j in 1:nrow(traj)){ # the sizes in traj, i.e. Age traj
     if(traj$Age[j]==1){
-      rep_tplus1 <- cbind(traj[j,i], repfun(e_m, c(T = Temp[i-1], kappa = kappp, Y = 1)), Temp[i-1], kappp, "Y"=1)} 
-    else{ rep_tplus1 <- cbind(traj[j,i], repfun(traj[j-1,i], c(T = Temp[i-1], kappa = kappp, Y = 1)), Temp[i-1], kappp, "Y"=1)}
-    colnames(rep_tplus1) <- c("mass","fec","Temp", "Kappa", "Y")
-    rep <- rbind(rep, rep_tplus1)
+      rep_tplus1 = cbind(traj[j,i], repfun(e_m, ratefun(e_m, Pars = c(T = Temp[i-1], kappa = test_Pars_mi[["kappa"]], Y = 1)), 
+                                            c(T = Temp[i-1], kappa = test_Pars_mi[["kappa"]], Y = 1))*2, Temp[i-1], test_Pars_mi[["kappa"]], "Y"=1)} 
+    else{ rep_tplus1 = cbind(traj[j,i], repfun(traj[j-1,i], ratefun(traj[j-1,i], Pars = c(T = Temp[i-1], kappa = test_Pars_mi[["kappa"]], Y = 1)),
+                                                c(T = Temp[i-1], kappa = test_Pars_mi[["kappa"]], Y = 1))*2, Temp[i-1], test_Pars_mi[["kappa"]], "Y"=1)}
+    colnames(rep_tplus1) = c("mass","fec","Temp", "Kappa", "Y")
+    rep_mi = rbind(rep_mi, rep_tplus1)
   }
 }
-
 repT_const <-
   ggplot() +
-  geom_point(data=data.f, aes(ltow(Length), Egg_mass), alpha=0.1) +
-  geom_line(data=as.tibble(rep), size=0.85, aes(mass, fec, color = as.factor(Temp)))+
+  geom_point(data=data.f, aes(ltow(Length), Egg_mass/e_m), alpha=0.1) +
+  geom_line(data=as_tibble(rep_mi), size=0.85, aes(mass, fec, color = as.factor(Temp)))+
   scale_color_manual(values = c('#4575b4','#91bfdb','#fee090','#fc8d59','#d73027'), name="Temp [K]")+
-  annotate(geom="text", -Inf, Inf, label="d", hjust = -2, vjust = 3, size= 4, fontface = "bold") +
   ylab(expression(paste(italic("f"),"(",italic("m"["s"]),italic(",T"),")"))) +
   xlab(expression(paste("Mass ",italic("m")[s]," [g]"))) +
-  theme_light()
+  ggtitle('(b)') +
+  theme_light(base_size=9) +
+  theme(plot.title = element_text(size = 9, face = "bold"),
+        legend.key.width = unit(1, 'cm')) 
 
-Kf_const + Eb_const + groT_const + repT_const
-
+#reset rates to main model
+eps1=deb.optim$par[3]
+eps2=deb.optim$par[4]
 kap_fun <- function(m, kappa, ha=deb.optim$par[2]){kappa*exp(-m/(ha*max(x)))} #for body size dep. kappa
+
+groT_const + repT_const
 ```
 
-Figure S2. Effects of a constant kappa, constant energy allocation of reserve and growth ($\kappa=0.8$, A) in contrast to the size dependence of the energy budget (B), compare Fig. S1.1c and d), the effect on mean size at age size specific fecundity compared to data on Windermere pike (black points in c and d).
+Figure S3.2. Effects of a mass independent energy allocation (constant $\kappa$) on growth trajectories (a, mean size at age) and size specific fecundity (b) compared to data on Windermere pike (points in a and b, compare S2a and b).
 
-## S3. Effect of number of size classes on long-term population growth rate ($\lambda$) and stable population size structure ($w$)
+\newpage
 
-When analyzing the IPM, the number of size classes in the population (or matrix mesh size) should not affect the estimation of $\lambda$ and stable size structure ($w$). We therefore estimate $\lambda$ for DEB-IPMs with $0<n<2400$ (Fig. S3) to find the minimum number size classes that does not affect $\lambda$ to an accuracy of three decimal points nor the qualitative shape of the $w$.
+## S4. Effect of number of size classes on long-term population growth rate ($\lambda$) and stable population size structure ($w$)
+
+When analyzing the IPM, the number of size classes in the population (or matrix mesh size) should not affect the estimation of $\lambda$ and stable size structure ($w$). We therefore estimate $\lambda$ for DEB-IPMs with $0<n<1400$ (Fig. S3) to find the minimum number size classes that does not affect $\lambda$ to an accuracy of three decimal points nor the qualitative shape of the $w$. This resulted in $n=1000$. 
 
 ```{r, echo = FALSE, warning = FALSE, fig.height = 4, fig.width = 6}
-# ns <- rev(seq(400,2400,200))
-# ts <- c(285,287,289)
-# nlam=data.frame()
-# nwlam=NULL
-# nvlam=list()
-# for(j in ts) {
-#   for(i in ns){
-#       n <- i
-#       x <- seq(mmin,mmax, length=n)
-#       dx <- x[2] - x[1] # step size (grams) in the continuos size
-#       lam <- wvlambda.projection(K.matrix(Pars <- c(T = j,                                           kappa = 0.8, Y = 1) ))
-#       nlam <- rbind(nlam,c(j,i,lam[[1]]))
-#       nwlam <- rbind(nwlam,cbind(j,i,x,lam[[2]][2:nrow(lam[[2]]),]))
-#       #nvlam <- c(nvlam,c(cbind(i,x,lam[[3]])))
-#   }
-# }
+#  ns <- rev(seq(200,1400,200))
+#  ts <- c(285,287,289)
+#  nlam=data.frame()
+#  nwlam=NULL
+#  nvlam=list()
+#  for(j in ts) {
+#    for(i in ns){
+#        n <- i
+#        x <- seq(mmin,mmax, length=n)
+#        dx <- x[2] - x[1] # step size (grams) in the continuos size
+#        lam <- wvlambda.projection(K.matrix(Pars <- c(T = j,  kappa = deb.optim$par[1], Y = 1) ))
+#        nlam <- rbind(nlam,c(j,i,lam[[1]]))
+#        nwlam <- rbind(nwlam,cbind(j,i,x,lam[[2]][2:nrow(lam[[2]]),]))
+#        #nvlam <- c(nvlam,c(cbind(i,x,lam[[3]])))
+#    }
+#  }
 # 
 # colnames(nlam) <- c("T","n","lambda")
 # colnames(nwlam) <- c("T","n","x","w")
 
-# save(nlam, file = "nlam.RData")
-# save(nwlam, file = "nwlam.RData")
+#save(nlam, file = "nlam.RData")
+#save(nwlam, file = "nwlam.RData")
 load("nlam.RData")
 load("nwlam.RData")
 nw.labs <- c("285 K", "287 K", "289 K")
 names(nw.labs) <- c("285", "287", "289")
 nW <-
   as_tibble(nwlam) %>%
-  filter(n %in% c(seq(400,2000, by=400))) %>%
+  filter(n %in% c(seq(200,1400, by=400))) %>%
 ggplot(., aes(x,w, color=as.factor(n))) +
-  geom_line() +
+  geom_line(size=0.5) +
   facet_grid(.~T, scales="free", labeller = labeller(T = nw.labs)) +
   xlab(expression(paste("Mass ",italic("m"["s"])," [g]"))) +
   xlim(0,1500) +
-  ylim(0,4e-05) +
-  scale_color_discrete(name = expression(paste("# size classes" ))) + #(", italic(n), ")"))) +
+  scale_color_discrete(name = expression(paste("# size classes" ))) + 
   ylab("Stable structure w") +
-  theme_light() +
-  theme(panel.background = element_rect(fill = "white", colour = "black"),
-        strip.background = element_blank(),
-        panel.border = element_rect(colour = "black", fill = NA))
+  theme_light(base_size=9) +
+  theme(strip.text = element_text(color = "black"),
+        strip.background = element_blank())
 
 nL <-
 as_tibble(nlam) %>%
   ggplot(., aes(n,lambda, color = as.factor(T) )) +
-  geom_line(size = 1) +
+  geom_line(size = 0.5) +
   scale_color_manual(values = c('#4575b4','#91bfdb','#fee090','#fc8d59','#d73027'), name="Temp [K]")+
-  theme_light() +
   ylab(expression(paste(italic(lambda)))) +
-  xlim(400,NA) +
-  xlab(expression(paste("# size classes"))) +  # (", italic(n), ")"))) +
-  theme_light()
+  xlim(200,NA) +
+  xlab(expression(paste("# size classes"))) + 
+  theme_light(base_size=9)
 
 nL / nW
 
-n <- 1400
+n <- 1000
 x <- seq(mmin,mmax, length=n)
 dx <- x[2] - x[1] # step size (grams) in the continuous size
 ```
 
-Figure S3. Effect of number of size classes ($n$) on long-term population growth rate ($\lambda$, top panel) and stable size structure ($w$, bottom panel). We use $n=1400$ in the main analysis of the DEB-IPM.
+Figure S4. Effect of number of size classes ($n$) on long-term population growth rate ($\lambda$, top panel) and stable size structure ($w$, bottom panel). We use $n=1000$ in the main analysis of the DEB-IPM.
 
 \newpage
 
-## S4. Sensitivity analysis of long-term population growth rate ($\lambda$) to $\kappa_0$: Methods and analytical decomposition into contributions from demographic functions
+## S5. Sensitivity analysis of long-term population growth rate ($\lambda$) to $\kappa_0$: Methods and analytical decomposition into contributions from demographic functions
 
 ### Methodological approach
 
@@ -583,9 +622,9 @@ The sensitivity with respect to $\kappa_0$ is thus given by
 
 \newpage
 
-## S5. Growth trajectories and fecundity at optimal energy allocation ($\kappa_0^*$)
+## S6. Growth trajectories and fecundity at optimal energy allocation ($\kappa_0^*$)
 
-Size dependent growth and fecundity for optimal energy allocation to somatic growth $(\kappa_0^*)$ differs from those presented in figure 3 in the main text (i.e. with $\kappa_0=0.8$ which was used to fit the model). Optimal energy allocation in our Windermere pike DEBIPM (main text figure 2) results in increased growth (mean size at age, Fig. S5A) but decreased size specific fecundity (Fig. S5b) compared to $\kappa_0=0.8$. 
+Size dependent growth and fecundity for optimal energy allocation to somatic growth $(\kappa_0^*)$ differs from those presented in Fig. 3 in the main text (i.e. with $\kappa_0=0.89$ which was used to fit the model). Compared to $\kappa_0=0.89$, optimal allocation in the  Windermere pike DEBIPM (main text Fig. 2) results in decreased size specific fecundity (Fig. S5b) and reduced growth  (mean size at age, Fig. S5A) for temperatures above 287 K, and increased growth below or equal to 287 K.  compared to $\kappa_0=0.89$. 
 
 ```{r, echo = FALSE, warning = FALSE, fig.height = 3, fig.width = 6}
 OptPars <- 
@@ -596,14 +635,14 @@ trajO <- data.frame()
 for(i in 1:nrow(OptPars)){
   trajO[1,i] <- x[which.max(age1size(Pars = unlist(OptPars[i,])))]
   for(j in 2:t){ # 25 years of growth
-    trajO[j,i] <- x[which.max(growthfun(trajO[j-1,i],Pars = unlist(OptPars[i,])))]
+    trajO[j,i] <- x[which.max(growthfun(trajO[j-1,i], ratefun(trajO[j-1,i], unlist(OptPars[i,])), Pars = unlist(OptPars[i,])))]
   }
 }
 colnames(trajO) <- OptPars[1:5,1]
 trajO <- cbind(Age=1:nrow(trajO),trajO)
 trajGOpt <- pivot_longer(trajO, cols=c(2:6),names_to = "Temp", values_to = "mass" )
 trajGOpt["Allocation"] <- "Optimal"
-trajG["Allocation"] <- "0.8"
+trajG["Allocation"] <- "0.89"
 trajBoth <- rbind(trajGOpt,trajG)
 
 groTopt <- 
@@ -612,55 +651,60 @@ groTopt <-
   geom_line(size=0.85,  aes(Age, mass, color = as.factor(Temp), linetype = as.factor(Allocation))) + #alpha = strat, 
   scale_color_manual(values = c('#4575b4','#91bfdb','#fee090','#fc8d59','#d73027'), name="Temp [K]")+
   scale_linetype_manual(name="Allocation", values = c("solid", "dashed")) +
-  annotate(geom="text", -Inf, Inf, label="a", hjust = -1, vjust = 2, size= 4, fontface = "bold")+
+  #annotate(geom="text", -Inf, Inf, label="a", hjust = -1, vjust = 2, size= 4, fontface = "bold") +
   ylab(expression(paste("Mass ", italic("\u03BC")["g"]," [g]"))) +
   xlab("Age [years]") +
   xlim(0,20)+
   ylim(0,max(trajBoth$mass)) +
-  theme_light() +
-  theme(legend.position="none")
+  ggtitle('(b)') +
+  theme_light(base_size=9) +
+  theme(plot.title = element_text(size = 9, face = "bold"),
+        legend.position="none",
+        legend.key.width = unit(1, 'cm')) 
 
 # Plot optimal fecundity from DEB and in Lake Windermere
-repO=NULL
+repO=data.frame()
 for(i in 2:ncol(trajO)){ # the temps, from 2nd to 6th column in trajO
   for(j in 1:nrow(trajO)){ # the sizes in trajo, i.e. Age trajO
-    if(trajO$Age[j]==1){ 
-      rep_tplus1 <- cbind(trajO[j,i], repfun(e_m, unlist(OptPars[i-1,])), OptPars[i-1,] )} #use the OptPars corresponding to temps in columns in trajO
-    else{ rep_tplus1 <- cbind(trajO[j,i], repfun(trajO[j-1,i], unlist(OptPars[i-1,])), OptPars[i-1,] )} #j-1 because last years size predicts fecundity this year
+    if(trajO$Age[j]==1){
+      rep_tplus1 = cbind(trajO[j,i], repfun(e_m, ratefun(e_m, unlist(OptPars[i-1,])), unlist(OptPars[i-1,])), OptPars[i-1,] )} #use the OptPars corresponding to temps in columns in trajO
+    else{ rep_tplus1 = cbind(trajO[j,i], repfun(trajO[j-1,i], ratefun(trajO[j-1,i], unlist(OptPars[i-1,])), unlist(OptPars[i-1,])), OptPars[i-1,] )} #j-1 because last years size predicts fecundity this year
     colnames(rep_tplus1) <- c("mass","fec","Temp", "Kappa", "Y")
     repO <- rbind(repO, rep_tplus1)
   }
 }
 
 repO["Allocation"] <- "Optimal"
-rep["Allocation"] <- "0.8"
+rep["Allocation"] <- "0.89"
 repBoth <- rbind(repO,rep)
 
 repTopt <- 
 ggplot() +
-  geom_line(data=as.tibble(repBoth), size=0.85, aes(mass, fec, color = as.factor(Temp), linetype= as.factor(Allocation))) +
+  geom_line(data=as_tibble(repBoth), size=0.85, aes(mass, fec, color = as.factor(Temp), linetype= as.factor(Allocation))) +
   scale_color_manual(values = c('#4575b4','#91bfdb','#fee090','#fc8d59','#d73027'), name="Temp [K]") +
   scale_linetype_manual(name="Allocation", values = c("solid", "dashed")) +
-  annotate(geom="text", -Inf, Inf, label="b", hjust = -1, vjust = 2, size= 4, fontface = "bold") +
   ylab(expression(paste(italic("f"),"(",italic("m"["s"]),italic(",T"),")"))) +
   xlab(expression(paste("Mass ",italic("m")[s]," [g]"))) +
-  theme_light()
+  ggtitle('(b)') +
+  theme_light(base_size=9) +
+  theme(plot.title = element_text(size = 9, face = "bold"),
+        legend.key.width = unit(1, 'cm')) 
 
-groTopt+repTopt
+groTopt + repTopt
 ```
 
-Figure S5. Mean size at age (a) and size specific fecundity (b) predicted from the optimal allocation strategy $(\kappa_0^*)$, Fig. 2 main text) at five temperatures and contrasted by growth and fecundity for $\kappa_0=0.8$ (i.e. $\kappa_0$ used for fitting the model).
+Figure S6. Mean size at age (a) and size specific fecundity (b) predicted from the optimal allocation strategy $(\kappa_0^*)$, Fig. 2 main text) at five temperatures and contrasted by growth and fecundity for $\kappa_0=0.89$ (i.e. $\kappa_0$ used for fitting the model).
 
 \newpage
 
-## S6. Fitness landscape and stable size structure for survival probability contrasts
+## S7. Fitness landscape and stable size structure for survival probability contrasts
 
-In the main analyses, we contrast the size- and temperature dependent survival used in our model using two alternative survival probability scenarios (Fig. 4c main text). Here we present the corresponding fitness landscape ($\lambda$), $\kappa_0^*$ (Fig S6a,b) and stable structure $w$  over temperature (Fig. S6c,d) for the temperature independent survival contrast $a(m_s)$ (Fig. S6a,c) and constant survival $a=0.68$ (Fig. S6b,d). In the first scenario, we use temperature independent survival $a(m_s)$ that corresponds to survival at mean temperature (287 K) in Windermere where temperature does not affect the survival asymptote for mass ($a(m_s)$, (Fig. 4d). In the second scenario we use constant (both size- and temperature-independent) survival probability that equals this asymptote at mean temperature (a=0.68, Fig. 4e).
+In the main analyses, we contrast the size- and temperature dependent survival used in our model using two alternative survival probability scenarios (Fig. 4c main text). Here we present the corresponding fitness landscape ($\lambda$), $\kappa_0^*$ (Fig. S7a,b) and stable structure $w$  over temperature (Fig. S7c,d) for the temperature independent survival contrast $a(m_s)$ (Fig. S7a,c) and constant survival $a=0.68$ (Fig. S7b,d). In the first scenario, we use temperature independent survival $a(m_s)$ that corresponds to survival at mean temperature (287 K) in Windermere where temperature does not affect the survival asymptote for mass ($a(m_s)$, (Fig. 4d). In the second scenario we use constant (both size- and temperature-independent) survival probability that equals this asymptote at mean temperature (a=0.68, Fig. 4e).
 
 ```{r, echo = FALSE, warning = FALSE, fig.height = 8, fig.width = 8}
 mycolors <- colorRampPalette(colors=c("#feebe2","#ce1256"))(9)
 
-Res_lam_2 <- read.delim("//storage-og.slu.se/home$/vitl0001/My Documents/Manus2/Results/Results220413/Res_lam_2_2022-04-21.txt", sep = ",")
+Res_lam_2 <- read.delim("//storage-og.slu.se/home$/vitl0001/My Documents/Manus2/Results/Results221011/Res_lam_2_2022-10-07.txt", sep = ",")
 maxl_2 <- as.data.frame(Res_lam_2) %>% 
   group_by(T) %>%
   slice_max(Lambda)
@@ -669,34 +713,35 @@ maxl_2["Sur_f"] <- "NotempVin"
 FigS6a <- 
   as_tibble(Res_lam_2) %>%
   filter(kappa > 0.65) %>%
+  filter(T < 292.25 & T > 283.5) %>%
   ggplot(., aes(T,kappa)) +
-  geom_raster(aes(fill=round(Lambda, 5))) +
-  geom_line(data=maxl_2,aes(T,kappa),size=0.85) +
+  geom_raster(aes(fill=Lambda)) +
+  geom_line(data=maxl_2,aes(T,kappa),size=0.8) +
   scale_fill_gradientn( #here Im choosing values for the scale that is within the kappa-temp space that Im plotting
-    limits = c(min(as.data.frame(Res_lam_2[Res_lam_2$kappa>0.65 & Res_lam_2$T<293.5, ][,'Lambda'])),max(as.data.frame(Res_lam_2[,'Lambda']))),
+    limits = c(min(as.data.frame(Res_lam_2[Res_lam_2$kappa>0.65 & Res_lam_2$T<292.25, ][,'Lambda'])),max(as.data.frame(Res_lam_2[,'Lambda']))),
     colours = c("black","white","#f1eef6","#ce1256"),
-    values = rescale(c(min(as.data.frame(Res_lam_2[Res_lam_2$kappa>0.65 & Res_lam_2$T<293.5, ][,'Lambda'])),0.9999,1, max(as.data.frame(Res_lam_2[,'Lambda']))),
+    values = rescale(c(min(as.data.frame(Res_lam_2[Res_lam_2$kappa>0.65 & Res_lam_2$T<292.25, ][,'Lambda'])),0.9999,1, max(as.data.frame(Res_lam_2[,'Lambda']))),
                      to=c(0,1)),
-    breaks = c(min(as.data.frame(Res_lam_2[Res_lam_2$kappa>0.65 & Res_lam_2$T<293.5, ][,'Lambda'])),1,max(as.data.frame(Res_lam_2[,'Lambda']))),
-    labels=c(round(min(as.data.frame(Res_lam_2[Res_lam_2$kappa>0.65 & Res_lam_2$T<293.5, ][,'Lambda'])), 2),
+    breaks = c(min(as.data.frame(Res_lam_2[Res_lam_2$kappa>0.65 & Res_lam_2$T<292.25, ][,'Lambda'])),1,max(as.data.frame(Res_lam_2[,'Lambda']))),
+    labels=c(round(min(as.data.frame(Res_lam_2[Res_lam_2$kappa>0.65 & Res_lam_2$T<292.25, ][,'Lambda'])), 2),
              1, round(max(as.data.frame(Res_lam_2[,'Lambda'])),2)),
     name = expression(lambda)) +
-  scale_x_continuous(expand = c(0,0), name = "Temperature [K]", breaks = seq(284,292,2), limits = c(283,293.5)) +
-   annotate(geom="text", -Inf, Inf, label="a", hjust = -16, vjust = 2, size= 4, fontface = "bold") +  
+  scale_x_continuous(expand = c(0,0), name = "Temperature [K]", breaks = seq(283,291,2)) +
   scale_y_continuous(expand = c(0,0), name=expression(paste(kappa[0]," (Growth allocation)"))) +
-  coord_cartesian(xlim = c(283.5,292.5)) +
-  theme_light() +
+  coord_cartesian(xlim = c(283.75, 292)) +
+  ggtitle('(a)') +
+  theme_light(base_size=9) +
   theme(panel.grid.major = element_blank(),
         panel.grid.minor = element_blank())
+  
 
-
-Res_w_2 <- read.delim("//storage-og.slu.se/home$/vitl0001/My Documents/Manus2/Results/Results220413/Res_w_2_2022-04-21.txt", sep = ",")
+Res_w_2 <- read.delim("//storage-og.slu.se/home$/vitl0001/My Documents/Manus2/Results/Results221011/Res_w_2_2022-10-07.txt", sep = ",")
 colnames(Res_w_2)[4:ncol(Res_w_2)] <- sub("X", "", colnames(Res_w_2)[4:ncol(Res_w_2)])
 
 Res_w_2_long <- pivot_longer(as.data.frame(Res_w_2), cols = c(4:ncol(Res_w_2)),
                            names_to = "Size", values_to ="biom")
 
-FigS6e <- 
+FigS6c <- 
   as_tibble(Res_w_2_long) %>%
   filter(kappa %in% round(deb.optim$par[1],2)) %>%
   mutate(biom_log=log(biom)) %>% 
@@ -704,16 +749,15 @@ FigS6e <-
   geom_contour_filled(breaks = c(min(log(Res_w_2_long$biom)), 
  log(1e-10),log(1e-9),log(1e-8),log(5e-8),log(1e-7),log(5e-7),log(1e-6),
                                  max(log(Res_w_2_long$biom)))) + 
-  annotate(geom="text", -Inf, Inf, label="c", hjust = -23, vjust = 3, size= 4, fontface = "bold")+
   scale_fill_manual(values = mycolors, name="Relative densities", 
                      labels=c(paste("<",1e-10), 
                               1e-9,1e-8,5e-8,1e-7,5e-7,1e-6,
                               paste("<",1))) + 
-  scale_y_continuous(name = "Temperature [K]", limits = c(284,294),breaks = seq(285,293,2))+
-  scale_x_continuous( name = expression(paste("Mass ",italic("m"["s"])," [g]")), limits = c(0,20000)) +
-  annotate(geom="text", -Inf, Inf, label="c", hjust = -13, vjust = 2, size= 4, fontface = "bold") +  
-  coord_cartesian(ylim = c(284,294)) +
-  theme_light() +
+  scale_y_continuous(expand = c(0,0), name = "Temperature [K]", breaks = seq(283,291,2)) +
+  scale_x_continuous(expand = c(0,0), name = expression(paste("Mass ",italic("m"["s"])," [g]")), limits = c(0,20000))+
+  coord_cartesian(ylim = c(283.75, 292)) +
+  ggtitle('(c)') +
+  theme_light(base_size=9) +
   theme(panel.grid.major = element_blank(),
         panel.grid.minor = element_blank())
 
@@ -725,9 +769,10 @@ maxl_3["Sur_f"] <- "flat"
 FigS6b <- 
   as_tibble(Res_lam_3) %>%
   filter(kappa > 0.65) %>%
+  filter(T < 292.25 & T > 283.5) %>%
   ggplot(., aes(T,kappa)) +
   geom_raster(aes(fill=Lambda)) +
-  geom_line(data=maxl_3,aes(T,kappa),size=0.85) +
+  geom_line(data=maxl_3,aes(T,kappa),size=0.8) +
   scale_fill_gradientn( #here Im choosing values for the scale that is within the kappa-temp space that Im plotting
     limits = c(min(as.data.frame(Res_lam_3[Res_lam_3$kappa>0.65 & Res_lam_3$T<293.5, ][,'Lambda'])),max(as.data.frame(Res_lam_3[,'Lambda']))),
     colours = c("#f1eef6","#ce1256"),
@@ -736,22 +781,23 @@ FigS6b <-
     breaks = c(min(as.data.frame(Res_lam_3[Res_lam_3$kappa>0.65 & Res_lam_3$T<293.5, ][,'Lambda'])),max(as.data.frame(Res_lam_3[,'Lambda']))),
     labels=c(round(min(as.data.frame(Res_lam_3[Res_lam_3$kappa>0.65 & Res_lam_3$T<293.5, ][,'Lambda'])), 2), round(max(as.data.frame(Res_lam_3[,'Lambda'])),2)),
     name = expression(lambda)) +
-  scale_x_continuous(expand = c(0,0), name = "Temperature [K]", breaks = seq(284,292,2), limits = c(283,293.5)) +
+  scale_x_continuous(expand = c(0,0), name = "Temperature [K]", breaks = seq(283,291,2)) +
   scale_y_continuous(expand = c(0,0), name=expression(paste(kappa[0]," (Growth allocation)"))) +
-  coord_cartesian(xlim = c(283.5,292.5)) +
-   annotate(geom="text", -Inf, Inf, label="b", hjust = -13, vjust = 2, size= 4, fontface = "bold") + 
-  theme_light() +
+  coord_cartesian(xlim = c(283.75, 292)) +
+  ggtitle('(b)') +
+  theme_light(base_size=9) +
   theme(panel.grid.major = element_blank(),
         panel.grid.minor = element_blank())
+  
 
 # a=0.68, i.e flat survival scenario
-Res_w_3 <- read.delim("//storage-og.slu.se/home$/vitl0001/My Documents/Manus2/Results/Results220413/Res_w_3_2022-04-21.txt", sep = ",")
+Res_w_3 <- read.delim("//storage-og.slu.se/home$/vitl0001/My Documents/Manus2/Results/Results221011/Res_w_3_2022-10-07.txt", sep = ",")
 colnames(Res_w_3)[4:ncol(Res_w_3)] <- sub("X", "", colnames(Res_w_3)[4:ncol(Res_w_3)])
 
 Res_w_3_long <- pivot_longer(as.data.frame(Res_w_3), cols = c(4:ncol(Res_w_3)),
                            names_to = "Size", values_to ="biom") 
 
-FigS6f <- 
+FigS6d <- 
   as_tibble(Res_w_3_long) %>%
   filter(kappa %in% round(deb.optim$par[1],2)) %>%
   mutate(biom_log=log(biom)) %>% 
@@ -759,44 +805,31 @@ FigS6f <-
   geom_contour_filled(breaks = c(min(log(Res_w_3_long$biom)), 
  log(1e-10),log(1e-9),log(1e-8),log(5e-8),log(1e-7),log(5e-7),log(1e-6),
                                  max(log(Res_w_3_long$biom)))) + 
-  annotate(geom="text", -Inf, Inf, label="d", hjust = -13, vjust = 2, size= 4, fontface = "bold")+
   scale_fill_manual(values = mycolors, name="Relative densities", 
                      labels=c(paste("<",1e-10), 
                               1e-9,1e-8,5e-8,1e-7,5e-7,1e-6,
                               paste("<",1))) +  
-  scale_y_continuous(name = "Temperature [K]", limits = c(284,294),breaks = seq(285,293,2))+
-  scale_x_continuous( name = expression(paste("Mass ",italic("m"["s"])," [g]")), limits = c(0,20000))+
-  coord_cartesian(ylim = c(284,294)) +
-  theme_light() +
+  scale_y_continuous(expand = c(0,0), name = "Temperature [K]", breaks = seq(283,291,2)) +
+  scale_x_continuous(expand = c(0,0), name = expression(paste("Mass ",italic("m"["s"])," [g]")), limits = c(0,20000))+
+  coord_cartesian(ylim = c(283.75, 292)) +
+  ggtitle('(d)') +
+  theme_light(base_size=9) +
   theme(panel.grid.major = element_blank(),
         panel.grid.minor = element_blank())
 
-#subvp <- viewport(width = 0.17, height = 0.2, x = 0.28, y = 0.52)
-#subvp2 <- viewport(width = 0.17, height = 0.2, x = 0.78, y = 0.52)
-#subvp <- viewport(width = 0.15, height = 0.18, x = 0.2, y = 0.55)
-#subvp2 <- viewport(width = 0.15, height = 0.18, x = 0.7, y = 0.55)
-
-#(FigS6a/FigS6c_1/FigS6e) | (FigS6b/FigS6d_1/FigS6f)
-(FigS6a/FigS6e) | (FigS6b/FigS6f)
-
-#print(FigS6c_2, vp = subvp)
-#print(FigS6d_2, vp = subvp2)
-
-
-
+(FigS6a/FigS6c) | (FigS6b/FigS6d)
 ```
 
-Figure S6. Fitness landscape (a,b) with solid line representing the optimal allocation strategy ($\kappa_0^*$), and the stable structure $w$ over temperature (c,d) for survival contrast $a(m_s)$(a,c) and $a=0.68$ (b,d).
+Figure S7. Fitness landscape (a,b) with solid line representing the optimal allocation strategy ($\kappa_0^*$), and the stable structure $w$ over temperature (c,d) for survival contrast $a(m_s)$(a,c) and $a=0.68$ (b,d).
 
 ## References
 
-Lindmark, M., J. Ohlberger, and A. Gardmark. 2022. Optimum growth temperature declines with body size within fish species. Glob Chang Biol 28:2259-2271.
+Byrd, R. H., Lu, P., Nocedal, J. and Zhu, C. (1995). A limited memory algorithm for bound constrained optimization. SIAM Journal on Scientific Computing, 16, 1190–1208. doi:10.1137/0916069.
+
+Lindmark, M., J. Ohlberger, and A. Gårdmark. 2022. Optimum growth temperature declines with body size within fish species. Glob Chang Biol 28:2259-2271.
 
 Winfield, I. J., and J. M. Fletcher. 2013. Windermere lake temperature data 1944-2002. . NERC Environmental Information Data Centre. https://doi.org/10.5285/9520664c-eb4d-4700-b064-5d215d23e595.
 
 Winfield, I. J., J. M. Fletcher, and J. B. James. 2013a. Pike fecundity data 1963-2002., NERC Environmental Information Data Centre. https://doi.org/10.5285/b8886915-14cb-44df-86fa-7ab718acf49a.
 
 Winfield, I. J., J. M. Fletcher, and J. B. James. 2013b. Pike growth data 1944-1995. NERC Environmental Information Data Centre. https://doi.org/10.5285/637d60d6-1571-49af-93f7-24c1279d884d.
-
-
-

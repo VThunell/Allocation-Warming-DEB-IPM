@@ -1,14 +1,14 @@
 # Code to fit DEB parameters
 
-# Created: October 3, 2022 by EPD
-# Last modified: October 3, 2022 by EPD
-
-# Set working directory
-#setwd("/Users/epdus/OneDrive/Breathless/Code/Packets/deb/")
+# Created: October 3, 2022 by EPD (Elizabeth Duskey)
+# Last modified: October 20, 2022 by Viktor Thunell
 
 # Load packages
+#install.packages("deSolve")
 library(deSolve)
+#install.packages("optimParallel")
 library(optimParallel)
+#install.packages("tidyverse")
 library(tidyverse)
 
 # Contents (ctrl-f):
@@ -49,7 +49,7 @@ T0 = 292
 k = 8.617333e-05
 
 # Temperature scaling parameter values, Lindmark et al. 2022, Global change biol.
-EaC = 0.73 # Aactivation energy Consumption
+EaC = 0.73 # Activation energy Consumption
 EaM = 0.62 # Activation energy Maintenance
 EdI = 1.89 # Deactivation energy
 
@@ -58,7 +58,6 @@ Td = T0 + 0.75
 
 # Rate at reference (a common) temperature Sharpe-Schoolfield
 bTc <- 1.824953
-
 
 ########## 0b. Common functions ##########
 
@@ -69,6 +68,9 @@ bTc <- 1.824953
 kap_fun = function(m, kappa, ha){
 	kappa*exp(-m/(ha*mmax))
 }
+
+# For body size independent kappa for Appendix S1, Section S3.
+#kap_fun = function(m, kappa, ha){kappa}
 
 # Boltzmann-Arrhenius function
 # 	T: temperature
@@ -84,7 +86,7 @@ rC_T_Pad <- function(T) {
 		bTc * exp(EaC*(T-T0)/(k*T*T0)) * (1+exp(EdI*(T-Td)/(k*T*Td)))^(-1) 
 }
 
-# For body size dependent assimilation
+# For body size dependent consumption (assimilation)
 #	m: mass
 #	kappa: baseline metabolism (?)
 #	returns assimilation
@@ -151,7 +153,6 @@ project = function(parEst, Temp, t, gdat, fdat) {
 	return(list(g = g, f = f))
 }
 
-
 ########## I. Load data ##########
 
 # Read in growth data
@@ -167,7 +168,6 @@ temperature = read.csv("WindermereMonthlyTemp1946_2012.csv")
 
 # Mean growth season temperature matching growth data
 temperature %>%
-  #filter(Year >= 1963, Year <= 1995, Month %in% c("Apr","May","Jun","Jul","Aug","Sep")) %>%
   filter(Year <= 2003, Month %in% c("Apr","May","Jun","Jul","Aug","Sep")) %>%
   .$Temp %>%
   mean()
@@ -176,21 +176,21 @@ temperature %>%
 mean_temp =
   temperature %>%
   filter(Month %in% c("Apr","May","Jun","Jul","Aug","Sep")) %>%
-  #filter(Year >= 1963, Year <= 1995, Month %in% c("Apr","May","Jun","Jul","Aug","Sep")) %>%
   aggregate(Temp ~Year, data=., mean)
 hist(mean_temp$Temp, 15)
 
 # Merge mean growth season temperature and growth data
 growthTemp = merge(growth,mean_temp,by="Year") # we lose 1944 & 1945 as they are not in temp data
+
 # Calculate mean individual temperature experienced
 growthTemp = merge(growthTemp, aggregate(Temp ~ Ind, data = growthTemp, mean), by="Ind", suffixes = c(".mean",".Indmean"))
 
-# Select growth data +/- 1 degree from mean temperature or belonging to the second and third quartile
+# Select growth data belonging to the second and third quartile
 qT = quantile(growthTemp$Temp.Indmean, probs = c(.25, .5, .75))
 growthTemp_select = 
  growthTemp %>%
-  #filter(Temp.Indmean > 14.37871-1 & Temp.Indmean < 14.37871+1) 
   filter(Temp.Indmean > qT[1] & Temp.Indmean < qT[3]) 
+length(unique(growthTemp$Ind)) - length(unique(growthTemp_select$Ind))
 
 # Merge mean growth season temperature and fecundity data
 fecTemp = merge(fecundity,mean_temp,by="Year") # we lose 1944 & 1945 as they are not in temp data
@@ -199,7 +199,7 @@ fecTemp = merge(fecundity,mean_temp,by="Year") # we lose 1944 & 1945 as they are
 fecTemp_select = 
   fecTemp %>%
   filter(Temp > qT[1] & Temp < qT[3]) 
-  #filter(Temp > 14.37871-1 & Temp < 14.37871+1) 
+nrow(fecTemp) - nrow(fecTemp_select)
 
 # Length-weight parameters (w = a*L^b)
 a = exp(-6.49286)
@@ -207,6 +207,7 @@ b = 3.4434
 
 # Convert length to weight
 growthTemp_select$mass = a * growthTemp_select$Length ^ b
+
 #growth$mass = a * growth$Length ^ b
 fecTemp_select$mass = a * fecTemp_select$Length ^ b
 #fecundity$mass = a * fecundity$Length ^ b
@@ -227,7 +228,7 @@ plot(Egg_number*Egg_weight/e_m ~ mass, fecTemp_select, main = "Fecundity")
 eps1_start = 1
 
 # Consumption allometric exponent starting value
-eps2_start = 0.54 
+eps2_start = 0.5
 
 # Baseline metabolism starting value
 kappa_start = 0.8
@@ -240,7 +241,6 @@ Temp = 287
 
 # Choose number of years
 t = 20
-
 
 ########## IV. Optimization function ##########
 
@@ -316,13 +316,16 @@ stopCluster(cl)
 
 # Get modeled growth and fecundity
 out.optim = project(deb.optim$par, Temp, t, growthTemp_select, fecTemp_select)
+deb.optim$par
 
-save(deb.optim, file = "optim_Pars.RData")
+#save(deb.optim, file = "optim_Pars2.RData")
+#save(deb.optim, file = "optim_Pars_alldat.RData")
+#save(deb.optim, file = "optim_Pars_mi.RData")
 
 ########## VI. Bootstrap confidence intervals ##########
 
 # Choose number of iterations
-n = 10
+n = 1000
 
 # Output data frame
 boot.deb = matrix(nrow = n, ncol = 4)
@@ -355,6 +358,7 @@ for(i in 1:n) {
 
 # Predict and plot
 preds = apply(unname(boot.deb), 1, project, Temp = Temp, t = t, gdat = growthTemp_select, fdat = fecTemp_select)
+save(preds, file = "preds.RData")
 
 # Combine predictions
 gboot = do.call(rbind, lapply(preds, function(x) x$g))

@@ -6,6 +6,9 @@
 # 2 - Temp independent surv (Vsurvfun(m))
 # 3 - Size independent surv (0.68)
 
+# RUNNING THE MODEL FOR ONE SET OF PARAMETERS TAKES 20 SECONDS ON A GOOD COMPUTER, 
+# RUNNING length(T) * length(kappa) NUMBER OF MODELS THUS TAKES TIME.
+
 date <- Sys.Date()
 
 T <- seq(283.5,294.5,0.25) # temperature range

@@ -3,46 +3,41 @@
 library(scales)
 library(patchwork) 
 library(grid)   # for viewport()
-library(tidyverse)
 
-#YVPike <- load("~/Manus2/R/Manus2R/PikeDataFiles.R")
-data.g <-read.csv("PikeGrowthData1944_1995.csv", sep=",")
-data.f <-read.csv("Windermere_Pike_Fecundity_and_Egg_Data_1963_to_2003.csv", sep=",")
-
-# Length-weight relationship from Windermere
-ltow  <-  function(l){exp(-6.49286)*l^3.4434} 
-data.f$body_mass <- ltow(data.f$Length)
-data.g$body_mass <- ltow(data.g$Length)
-for(i in 1:nrow(data.g)){ # sorry  for the slow loop, its to get age from years (from back calculated data)
-  data.g$Age[i] <- 
-    (data.g[i,]$Year)-min(data.g[data.g$Ind==data.g[i,"Ind"], ]$Year)+1
-}
-data.f$Egg_mass <- data.f$Egg_number*data.f$Egg_weight
+# # Length-weight relationship from Windermere
+# data.f$body_mass <- ltow(data.f$Length)
+# data.g$body_mass <- ltow(data.g$Length)
+# for(i in 1:nrow(data.g)){ # sorry  for the slow loop, its to get age from years (from back calculated data)
+#   data.g$Age[i] <- 
+#     (data.g[i,]$Year)-min(data.g[data.g$Ind==data.g[i,"Ind"], ]$Year)+1
+# }
+# data.f$Egg_mass <- data.f$Egg_number*data.f$Egg_weight
 
 #Colorscheme from blue to red scale_color_manual(values = c('#4575b4','#91bfdb','#e0f3f8','#fee090','#fc8d59','#d73027'))+
 
 ## Load in results for Main and Contrast results ####
 # Results Baseline scenario
-Res_lam_1 <- read.delim("//storage-og.slu.se/home$/vitl0001/My Documents/Manus2/Results/Results220413/Res_lam_1_2022-04-21.txt", sep = ",")
-Res_v_1 <- read.delim("//storage-og.slu.se/home$/vitl0001/My Documents/Manus2/Results/Results220413/Res_v_1_2022-04-21.txt", sep = ",")
+Res_lam_1 <- read.delim("//storage-og.slu.se/home$/vitl0001/My Documents/Manus2/Results/Results221011/Res_lam_1_2022-10-07.txt", sep = ",")
+Res_v_1 <- read.delim("//storage-og.slu.se/home$/vitl0001/My Documents/Manus2/Results/Results221011/Res_v_1_2022-10-07.txt", sep = ",")
 colnames(Res_v_1)[4:ncol(Res_v_1)] <- sub("X", "", colnames(Res_v_1)[4:ncol(Res_v_1)])
-Res_w_1 <- read.delim("//storage-og.slu.se/home$/vitl0001/My Documents/Manus2/Results/Results220413/Res_w_1_2022-04-21.txt", sep = ",")
+Res_w_1 <- read.delim("//storage-og.slu.se/home$/vitl0001/My Documents/Manus2/Results/Results221011/Res_w_1_2022-10-07.txt", sep = ",")
 colnames(Res_w_1)[4:ncol(Res_w_1)] <- sub("X", "", colnames(Res_w_1)[4:ncol(Res_w_1)])
 
-maxl_1 <- as.data.frame(Res_lam_1) %>% # get max lambda for each temperature 
+# Retrieve max lambda for each temperature for baseline results
+maxl_1 <- as.data.frame(Res_lam_1) %>% 
   group_by(T) %>%
   slice_max(Lambda)
 maxl_1["Sur_f"] <- "main_s"
 
-# Results for size-, but not temperature-dependent survival
-Res_lam_2 <- read.delim("//storage-og.slu.se/home$/vitl0001/My Documents/Manus2/Results/Results220413/Res_lam_2_2022-04-21.txt", sep = ",")
+# Results and max lambda for size-, but not temperature-dependent survival
+Res_lam_2 <- read.delim("//storage-og.slu.se/home$/vitl0001/My Documents/Manus2/Results/Results221011/Res_lam_2_2022-10-07.txt", sep = ",")
 maxl_2 <- as.data.frame(Res_lam_2) %>% # get max lambda for each temperature
   group_by(T) %>%
   slice_max(Lambda)
 maxl_2["Sur_f"] <- "tind_s"
 
-# Results for constant survival (i.e. independent of size and temperature)
-Res_lam_3 <- read.delim("//storage-og.slu.se/home$/vitl0001/My Documents/Manus2/Results/Results220413/Res_lam_3_2022-04-21.txt", sep = ",")
+# Results and max lambda for constant survival (i.e. independent of size and temperature)
+Res_lam_3 <- read.delim("//storage-og.slu.se/home$/vitl0001/My Documents/Manus2/Results/Results221011/Res_lam_3_2022-10-07.txt", sep = ",")
 maxl_3 <- as.data.frame(Res_lam_3) %>% # get max lambda fr each temperature
   group_by(T) %>%
   slice_max(Lambda)
@@ -75,7 +70,7 @@ traj <- data.frame()
    }
  }
 colnames(traj) <- Temp[1:5]
-traj<-cbind(Age=1:nrow(traj),traj)
+traj <- cbind(Age=1:nrow(traj),traj)
 trajG <- pivot_longer(traj, cols=c(2:6),names_to = "Temp", values_to = "mass" )
 trajG$Temp <- as.double(trajG$Temp)
 
@@ -85,13 +80,13 @@ groT <- ggplot(trajG) +
   xlab("Age [years]") +
   xlim(0,20)+
   ylim(0,max(trajG$mass))+
-  annotate(geom="text", -Inf, Inf, label="a", hjust = -2, vjust = 3, size= 4, fontface = "bold")+
-  theme_light() +
   scale_color_manual(values = c('#4575b4','#91bfdb','#fee090','#fc8d59','#d73027'), name="Temp [K]")+
-  theme(legend.position="none")
-
+  ggtitle('(a)') +
+  theme_light(base_size = 9) +
+  theme(plot.title = element_text(size = 9, face = "bold"))
+    
 #### Plot size dependent fecundity, f(m_s,T) via repfun() ####
-rep=NULL
+rep=data.frame()
 for(i in 2:ncol(traj)){ # the temps, from 2nd last column in traj
   for(j in 1:nrow(traj)){ # the sizes in traj, i.e. Age traj
     if(traj$Age[j]==1){
@@ -104,19 +99,21 @@ for(i in 2:ncol(traj)){ # the temps, from 2nd last column in traj
   }
 }
 
-repT <- ggplot() +
-  geom_line(data=as_tibble(rep), size=0.85, aes(mass, fec, color = as.factor(Temp)))+
+repT <- 
+  ggplot() +
+  geom_line(data=as_tibble(rep), size=0.85, aes(mass, fec, color = as.factor(Temp))) +
+  ggtitle('(b)') +
   scale_color_manual(values = c('#4575b4','#91bfdb','#fee090','#fc8d59','#d73027'), name="Temp [K]")+
-  annotate(geom="text", -Inf, Inf, label="b", hjust = -2, vjust = 3, size= 4, fontface = "bold") +
   ylab(expression(paste(italic("f"),"(",italic("m"["s"]),italic(",T"),")"))) +
   xlab(expression(paste("Mass ",italic("m")[s]," [g]"))) +
-  theme_light()
+  theme_light(base_size=9) +
+  theme(plot.title = element_text(size = 9, face = "bold"))
 
 #### Plot Age 1 size distribution, o(e_m,T) via age1size() ####
 T_o <- NULL
 xT_o <- 1:500
 for(i in seq(285,293,2)){
-  T_o_pars <- c(T = i, kappa = 0.8, Y=1)
+  T_o_pars <- c(T = i, kappa = deb.optim$par[1], Y=1)
   T_o <- as.data.frame(rbind(T_o, c(T_o_pars, age1size(T_o_pars, y=xT_o))))
 }
 colnames(T_o)[4:ncol(T_o)] <- xT_o
@@ -127,11 +124,14 @@ oT <-
   ggplot(., aes(as.numeric(Size), biom, color = as.factor(T), linetype = as.factor(T))) +
   geom_line(size=0.85) +
   scale_x_continuous(expression(paste("Mass ",italic("m")[s]," [g]")), limits = c(0,300),breaks = seq(0,300,100)) +
-  annotate(geom="text", -Inf, Inf, label="d", hjust = -4, vjust = 3, size= 4, fontface = "bold") +
+  #annotate(geom="text", -Inf, Inf, label="d", hjust = -2, vjust = 3, size= 9/2.845276, fontface = "bold") +
   ylab(expression(paste(italic("o"),"(",italic("m"["s+1"]),italic(":T"),")"))) +
-  scale_color_manual(values = c('#4575b4','#91bfdb','#fee090','#fc8d59','#d73027'), name="Temp [K]")+
-  scale_linetype_manual(values = c('solid','solid','solid','dashed','dashed'), guide =NULL )+
-  theme_light()
+  scale_color_manual(values = c('#4575b4','#91bfdb','#fee090','#fc8d59','#d73027'), name="Temp [K]") +
+  scale_linetype_manual(values = c('solid','solid','solid','dashed','dashed'), guide =NULL ) +
+  ggtitle('(d)') +
+  theme_light(base_size=9) +
+  theme(plot.title = element_text(size = 9, face = "bold"),
+  legend.position="none")
 
 ## Plot survival probability, DEBsurv() ####
 Tsur <- NULL
@@ -150,40 +150,42 @@ surT <-
   geom_line(size=0.85, linetype= "solid") +
   ylab(expression(paste(italic("a"),"(",italic("m"["s"]),italic(",T"),")"))) +
   xlab(expression(paste("Mass ",italic("m")[s]," [g]"))) +
-  annotate(geom="text", -Inf, Inf, label="c", hjust = -2, vjust = 3, size= 4, fontface = "bold") +
   ylim(0,1) +
   scale_color_manual(values = c('#4575b4','#91bfdb','#fee090','#fc8d59','#d73027'), name="Temp [K]")+
-  theme_light()+
-  theme(legend.position="none")
+  ggtitle('(c)') +
+  theme_light(base_size = 9) +
+  theme(plot.title = element_text(size = 9, face = "bold"),
+        legend.position="none")
 
 ### FIG 3E,F - STABLE STRUCTURE W ####
 Res_w_1_long <- pivot_longer(as.data.frame(Res_w_1), cols = c(4:ncol(Res_w_1)), 
                            names_to = "Size", values_to ="biom") # not use column 4 & 5 (eggstage and recruits)
-
-Fig3e_1 <- Res_w_1_long %>%
+Fig3e_1 <- 
+  Res_w_1_long %>%
   filter(T %in% c(285, 287, 289, 291, 293)) %>%
-  filter(as.character(kappa) %in% 0.8) %>% #Floating point issue when comparing vector, therefore the use of %in%, can also use near()
+  filter(as.character(kappa) %in% round(deb.optim$par[1],2)) %>%
   ggplot(., aes(as.numeric(Size), biom, group = rev(as.factor(T)), color = as.factor(T))) +
   geom_line(size=0.8)+
   ylab("Stable structure w") +
   xlab(expression(paste("Mass ",italic("m"["s"])," [g]"))) +
-  ylim(0,5e-7)+
+  ylim(0,6.5e-7)+
   xlim(0,10000)+
-  annotate(geom="text", -Inf, Inf, label="e", hjust = -21, vjust = 3, size= 4, fontface = "bold") +
   scale_color_manual(values = c('#4575b4','#91bfdb','#fee090','#fc8d59','#d73027'), name="Temp [K]")+
-  theme_light() +
   labs(color = "Temp [K]") +
-  theme(legend.position="none")
+  ggtitle('(e)') +
+  theme_light(base_size=9) +
+  theme(plot.title = element_text(size = 9, face = "bold"),
+        legend.position="none")
 
 Fig3e_2 <- Res_w_1_long %>%
   filter(T %in% c(285, 287, 289, 291, 293)) %>%
-  filter(as.character(kappa) %in% 0.8) %>% #Floating point issue when comparing vector, therefore the use of %in%, can also use near()
+  filter(as.character(kappa) %in% 0.8) %>% 
   ggplot(., aes(as.numeric(Size), biom, group = rev(as.factor(T)), color = as.factor(T))) +
-  geom_line(size=0.8)+
+  geom_line(size=0.7)+
   ylim(0,5e-5)+
   scale_x_continuous(breaks = c(0,200,400), limits=c(0,400))+
   scale_color_manual(values = c('#4575b4','#91bfdb','#fee090','#fc8d59','#d73027'), name="Temp [K]")+
-  theme_light() +
+  theme_light(base_size=9) +
   theme(legend.position="none",
         axis.title.x=element_blank(),
         plot.background = element_rect(fill = "transparent", color = NA), # bg of the plot
@@ -192,46 +194,47 @@ Fig3e_2 <- Res_w_1_long %>%
 mycolors <- colorRampPalette(colors=c("#feebe2","#ce1256"))(9)
 Fig3f <- 
   as_tibble(Res_w_1_long) %>%
-  filter(kappa %in% 0.8) %>%
+  filter(kappa %in% round(deb.optim$par[1],2)) %>%
   mutate(biom_log=log(biom)) %>% 
-    
   ggplot(., aes(as.double(Size),T, z=biom_log, colour=biom_log))+
   geom_contour_filled(breaks = c(min(log(Res_w_1_long$biom)), 
                                  log(1e-10),log(1e-9),log(1e-8),log(5e-8),log(1e-7),log(5e-7),log(1e-6),
                                  max(log(Res_w_1_long$biom)))) + 
-  annotate(geom="text", -Inf, Inf, label="f", hjust = -23, vjust = 3, size= 4, fontface = "bold")+
   scale_fill_manual(values = mycolors, name="Relative densities", 
                      labels=c(paste("<",1e-10), 
                               1e-9,1e-8,5e-8,1e-7,5e-7,1e-6,
                               paste("<",1))) + 
-  scale_y_continuous(name = "Temperature [K]", limits = c(284,294),breaks = seq(285,293,2))+
-  scale_x_continuous( name = expression(paste("Mass ",italic("m"["s"])," [g]")), limits = c(0,20000))+
-  coord_cartesian(ylim = c(284,294)) +
-  theme_light() +
-  theme(panel.grid.major = element_blank(),
-        panel.grid.minor = element_blank())
+  scale_y_continuous(expand = c(0,0), name = "Temperature [K]", breaks = seq(283,291,2)) +
+  scale_x_continuous(expand = c(0,0), name = expression(paste("Mass ",italic("m"["s"])," [g]")), limits = c(0,20000))+
+  coord_cartesian(ylim = c(283.75, 292)) +
+  ggtitle('(f)') +
+  theme_light(base_size=9) +
+  theme(plot.title = element_text(size = 9, face = "bold"),
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank())
 
 ### FIG 2 - SURFACE OF FITNESS OVER TEMP AND KAPPA ####
 
 Fig2 <- 
   as_tibble(Res_lam_1) %>%
   filter(kappa > 0.65) %>%
+  filter(T < 292.25 & T > 283.5) %>%
   ggplot(., aes(T,kappa)) +
-  geom_raster(aes(fill=round(Lambda, 4))) +
-  geom_line(data=maxl_1,aes(T,kappa),size=0.85) +
+  geom_raster(aes(fill=Lambda)) +
+  geom_line(data=maxl_1,aes(T,kappa),size=0.8) +
   scale_fill_gradientn( #here Im choosing values for the scale that is within the kappa-temp space that Im plotting
-    limits = c(min(as.data.frame(Res_lam_1[Res_lam_1$kappa>0.65 & Res_lam_1$T<293.5, ][,'Lambda'])),max(as.data.frame(Res_lam_1[,'Lambda']))),
+    limits = c(min(as.data.frame(Res_lam_1[Res_lam_1$kappa>0.65 & Res_lam_1$T<292.25, ][,'Lambda'])),max(as.data.frame(Res_lam_1[,'Lambda']))),
     colours = c("black","white","#f1eef6","#ce1256"),
-    values = rescale(c(min(as.data.frame(Res_lam_1[Res_lam_1$kappa>0.65 & Res_lam_1$T<293.5, ][,'Lambda'])),0.9999,1, max(as.data.frame(Res_lam_1[,'Lambda']))),
+    values = rescale(c(min(as.data.frame(Res_lam_1[Res_lam_1$kappa>0.65 & Res_lam_1$T<292.25, ][,'Lambda'])),0.9999,1, max(as.data.frame(Res_lam_1[,'Lambda']))),
                      to=c(0,1)),
-    breaks = c(min(as.data.frame(Res_lam_1[Res_lam_1$kappa>0.65 & Res_lam_1$T<293.5, ][,'Lambda'])),1,max(as.data.frame(Res_lam_1[,'Lambda']))),
-    labels=c(round(min(as.data.frame(Res_lam_1[Res_lam_1$kappa>0.65 & Res_lam_1$T<293.5, ][,'Lambda'])), 2),
+    breaks = c(min(as.data.frame(Res_lam_1[Res_lam_1$kappa>0.65 & Res_lam_1$T<292.25, ][,'Lambda'])),1,max(as.data.frame(Res_lam_1[,'Lambda']))),
+    labels=c(round(min(as.data.frame(Res_lam_1[Res_lam_1$kappa>0.65 & Res_lam_1$T<292.25, ][,'Lambda'])), 2),
              1, round(max(as.data.frame(Res_lam_1[,'Lambda'])),2)),
     name = expression(lambda)) +
-  scale_x_continuous(expand = c(0,0), name = "Temperature [K]", breaks = seq(284,292,2), limits = c(283,293.5)) +
+  scale_x_continuous(expand = c(0,0), name = "Temperature [K]", breaks = seq(283,291,2)) +
   scale_y_continuous(expand = c(0,0), name=expression(paste(kappa[0]," (Growth allocation)"))) +
-  coord_cartesian(xlim = c(283.5,292.5)) +
-  theme_light() +
+  coord_cartesian(xlim = c(283.75, 292)) +
+  theme_light(base_size=9) +
   theme(panel.grid.major = element_blank(),
         panel.grid.minor = element_blank())
 
@@ -240,21 +243,22 @@ Fig4A <-
 maxl_123 %>%
   ggplot(., aes(T,kappa, linetype = Sur_f)) +
   geom_line(data=maxl_123, aes(T,kappa), size=0.85) +
-  scale_x_continuous(expand = c(0,0), name = "Temperature [K]", breaks = seq(284,292,2), limits = c(283,293.5)) +
+  scale_x_continuous(expand = c(0,0), name = "Temperature [K]", breaks = seq(283,291,2)) +
   scale_y_continuous(expand = c(0,0), name=expression(paste(kappa[0]," (Growth allocation)")), limits = c(0.695,1.005))+
   scale_linetype_manual(values = c("solid","dotdash","dashed"),
                         name= "Survival",
                         labels = c(expression(paste(italic("a"),"(",italic("T,"),italic("m"["s"]),")")),
                                    expression(paste(italic("a"),"(",italic("m"["s"]),")")),
                                    "a=0.68")) +
-  annotate(geom="text", -Inf, Inf, label="a", hjust = -2, vjust = 3, size= 4, fontface = "bold") +
-  coord_cartesian(xlim = c(283.5,292.5)) +
-  theme_light() +
-  theme( legend.key.width = unit(1, 'cm')) 
+  coord_cartesian(xlim = c(283.75, 292)) +
+  ggtitle('(a)') +
+  theme_light(base_size=9) +
+  theme(plot.title = element_text(size = 9, face = "bold"),
+        legend.key.width = unit(1, 'cm')) 
 
 
 ### FIG 4D,B AND C, THREE SURVIVAL SCENARIOS  ####
-# Defnie survfun for plots, first Baseline model survival 4D
+# Define survfun for plots, first Baseline model survival 4D
 survfun <- function(m, Pars) { 
   Vsurvfun <- function(m, z=10.34){ 
     sxV <- function(m, z=10.34){
@@ -299,11 +303,13 @@ Fig4D <-
   geom_line(size=0.85, linetype= "solid") +
   ylab(expression(paste(italic("a"),"(",italic("m"["s"]),italic(", T"),")"))) +
   xlab(expression(paste("Mass ",italic("m"["s"])," [g]"))) +
-  annotate(geom="text", -Inf, Inf, label="d", hjust = -1.5, vjust = 2.5, size= 4, fontface = "bold") +
   ylim(0,1) +
+  scale_x_continuous(breaks=c(0,10000,20000)) +
   scale_color_manual(values = c('#4575b4','#91bfdb','#fee090','#fc8d59','#d73027'), name="Temp [K]")+
-  theme_light() +
-  theme( legend.key.width = unit(1, 'cm') ) 
+  ggtitle('(d)') +
+  theme_light(base_size=9) +
+  theme(plot.title = element_text(size = 9, face = "bold"),
+        legend.key.width = unit(1, 'cm'))
 
 # Define survfun for Temperature independent version of Vindenes et al. 2014
 survfun <- function(m, Pars) { # Mass-Temp dependence of yearly Mortality 
@@ -350,12 +356,14 @@ Fig4B <-
   geom_line(size=0.85, linetype= "dotdash") +
   ylab(expression(paste(italic("a"),"(",italic("m"["s"]),")"))) +
   xlab(expression(paste("Mass ",italic("m"["s"])," [g]"))) +
-  annotate(geom="text", -Inf, Inf, label="b", hjust = -1.5, vjust = 2.5, size= 4, fontface = "bold") +
+  scale_x_continuous(breaks=c(0,10000,20000)) +
   ylim(0,1) +
   scale_colour_manual(name="Temp [K]", values=c("black","black","black","black","black")) +
-  theme_light() +
-  theme( legend.position="none",
-    legend.key.width = unit(1, 'cm') )
+  ggtitle('(b)') +
+  theme_light(base_size=9) +
+  theme(plot.title = element_text(size = 9, face = "bold"),
+        legend.position="none",
+        legend.key.width = unit(1, 'cm'))
 
 # Constant survival (0.68)
 survfun <- function(m, Pars) { # Mass-Temp dependence of yearly Mortality 
@@ -400,12 +408,15 @@ Fig4C <-
   geom_line(size=0.85, linetype= "dashed") +
   ylab("a=0.68") +
   xlab(expression(paste("Mass ",italic("m"["s"])," [g]"))) +
-  annotate(geom="text", -Inf, Inf, label="c", hjust = -1.5, vjust = 2.5, size= 4, fontface = "bold") +
+  scale_x_continuous(breaks=c(0,10000,20000)) +
   ylim(0,1) +
+  ggtitle('(c)') +
   scale_colour_manual(name="Temp [K]", values=c("black","black","black","black","black")) +
-  theme_light() +
-  theme( legend.position="none",
-    legend.key.width = unit(1, 'cm')) 
+  ggtitle('(c)') +
+  theme_light(base_size=9) +
+  theme(plot.title = element_text(size = 9, face = "bold"),
+        legend.position="none",
+        legend.key.width = unit(1, 'cm')) 
 
 # define main model survfun again for use in further calculations
 survfun <- function(m, Pars) { # Mass-Temp dependence of yearly Mortality 
@@ -440,29 +451,29 @@ survfun <- function(m, Pars) { # Mass-Temp dependence of yearly Mortality
 # Optimum kappa dependent on temperature:
 OptPars <- 
   as.data.frame(maxl_1[,1:3]) %>%
-  filter(T %in% c(286, 288, 290))
+  filter(T %in% c(287, 289, 291))
 
 #Calculate sensitivities based on methods in supplement S4
 Res_Sens <-NULL
 for (i in 1:nrow(OptPars)){
   res_v <- as.numeric(Res_v_1 %>% filter(T == OptPars[i,1] & kappa==OptPars[i,2]))[4:ncol(Res_v_1)]
   res_w <- as.numeric(Res_w_1 %>% filter(T == OptPars[i,1] & kappa==OptPars[i,2]))[4:ncol(Res_w_1)]
-  
-  Gr_cont <- bind_cols(Size=x, Temp=OptPars[i,1], kappa=OptPars[i,2], 
-                       dfun="Gr", outer(res_v[2:(n+1)], res_w[2:(n+1)], "*") 
+
+  Gr_cont <- bind_cols(Size=x, Temp=OptPars[i,1], kappa=OptPars[i,2],
+                       dfun="Gr", outer(res_v[2:(n+1)], res_w[2:(n+1)], "*")
                        * t(survfun(x, OptPars[i,]) * t(G_NumDer(h=0.00001, x, OptPars[i,])))*dx)
-  Gr_cont["Sens"] <- apply(Gr_cont[5:ncol(Gr_cont)],1,FUN=sum)# sum the distribution y to get sensitivity for each size 
+  Gr_cont["Sens"] <- apply(Gr_cont[5:ncol(Gr_cont)],1,FUN=sum)# sum the distribution y to get sensitivity for each size
   Gr_cont<-Gr_cont[,c(1:4,ncol(Gr_cont))]
-  
+
   F_cont  <- bind_cols(Size=x, Temp=OptPars[i,1], kappa=OptPars[i,2],
-                       dfun="F",  Sens=res_v[1]*res_w[2:(n+1)] 
+                       dfun="F",  Sens=res_v[1]*res_w[2:(n+1)]
                        * survfun(x, OptPars[i,]) * F_NumDer(h=0.00001, x, OptPars[i,]))
-  
-  A1_cont <- bind_cols(Size=x, Temp=OptPars[i,1], kappa=OptPars[i,2], 
-                       dfun="A1", Sens=res_v[2:(n+1)]*res_w[1] 
+
+  A1_cont <- bind_cols(Size=x, Temp=OptPars[i,1], kappa=OptPars[i,2],
+                       dfun="A1", Sens=res_v[2:(n+1)]*res_w[1]
                        * el_surv * A1_NumDer(h=0.00001, x, OptPars[i,])*dx)
-  
-  Res_Sens <- rbind(rbind(Gr_cont,F_cont,A1_cont), Res_Sens) 
+
+  Res_Sens <- rbind(rbind(Gr_cont,F_cont,A1_cont), Res_Sens)
 }
 
 # Labels for sensitivities in plot
@@ -475,7 +486,7 @@ s_sum <- Res_Sens %>%
   group_by(dfun, Temp) %>%
   summarise(sum.c = sum(Sens, na.rm = TRUE)) #%>%
 
-s_sum_text <- data.frame(Size = c(2000,2000,2000,4500,4500,4500,7000,7000,7000), Sens = 0.075,
+s_sum_text <- data.frame(Size = c(3000,3000,3000,6000,6000,6000,8500,8500,8500), Sens = 0.075,
                       dfun = s_sum$dfun, Temp = s_sum$Temp, label = round(s_sum$sum.c,3))
 
 # create Fig 5
@@ -484,37 +495,35 @@ Fig5 <-
   mutate(dfun=as.factor(dfun)) %>%
   ggplot(.) +
   geom_path(aes(Size, Sens, color = dfun)) +
-  facet_grid(Temp~., scales="fixed") +
-  xlim(0,20000) +
-  geom_vline(xintercept=400, linetype="dashed", size=0.3) +
+  facet_grid(Temp~., scales="fixed", labeller = ) +
+  xlim(0,15000) +
+  geom_vline(xintercept=417, linetype="dashed", size=0.3) +
   ylab("Sensitivity contribution") +
   xlab("Mass [g]") +
-  scale_color_manual(values = c('#E69F00','#000000','#ce1256'), labels= cont.labs, name= "")+
+  scale_color_manual(values = c('#E69F00','#000000','#ce1256'), labels= cont.labs, name= "") +
   geom_text(data=s_sum_text, aes(Size, Sens, label = label, 
-                              colour=dfun), size=4, show.legend = FALSE) +
-  theme_light() +
-  theme(panel.background = element_rect(fill = "white", colour = "black"),
-        strip.background = element_blank(),
-        panel.border = element_rect(colour = "black", fill = NA))
-
-Fig5
+                              colour=dfun), size=2.5, show.legend = FALSE) +
+  theme_light(base_size=9) +
+  theme(strip.text = element_text(color = "black"),
+        strip.background = element_blank())
 
 #### Write plots to pdf:s ####
- date <- Sys.Date()
-# pdf(paste("DEBIPM_fig2_",date,".pdf", sep=""), width = 6, height = 4, paper="a4")
+date <- Sys.Date()
+
+# pdf(paste("DEBIPM_fig2_",date,".pdf", sep=""), width = 4, height = 3, paper="a4")
 # Fig2
 # dev.off()
-# 
-# pdf(paste("DEBIPM_fig3_",date,".pdf", sep=""), width = 8, height = 8, paper="a4")
+#  
+# pdf(paste("DEBIPM_fig3_",date,".pdf", sep=""), width = 7, height = 6, paper="a4")
 # subvp <- viewport(width = 0.19, height = 0.18, x = 0.26, y = 0.20)
-# (groT + repT) / (surT + oT) / (Fig3e_1+Fig3f) #/ (d_1+d_2)
+# groT + repT  + surT + oT + Fig3e_1 + Fig3f + plot_layout(guides = "collect", nrow = 3)
 # print(Fig3e_2, vp = subvp)
-# dev.off()
-# 
-# pdf(paste("DEBIPM_fig4_",date,".pdf", sep=""), width = 10, height = 6, paper="a4")
-#  Fig4A / (Fig4B+Fig4C+Fig4D)
 #  dev.off()
-# 
-# pdf(paste("DEBIPM_fig5_",date,".pdf", sep=""), width = 7, height = 5, paper="a4")
+#  
+# pdf(paste("DEBIPM_fig4_",date,".pdf", sep=""), width = 7, height = 4, paper="a4")
+# Fig4A / (Fig4B+Fig4C+Fig4D) + plot_layout(guides = "collect", heights = c(1.5,1))
+# dev.off()
+#  
+# pdf(paste("DEBIPM_fig5_",date,".pdf", sep=""), width = 6, height = 3, paper="a4")
 # Fig5
 # dev.off()

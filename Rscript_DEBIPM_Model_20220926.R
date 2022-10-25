@@ -1,58 +1,52 @@
 
 ############### THUNELL ET AL. 20XX DEBIPM R-script - MODEL #########################
   
-#YVPike <- load("PikeDataFiles.R")
 data.g <-read.csv("PikeGrowthData1944_1995.csv", sep=",")
 data.f <-read.csv("Windermere_Pike_Fecundity_and_Egg_Data_1963_to_2003.csv", sep=",")
 
-### Packages ####
-#install.packages("deSolve")
+# Packages ####
+
 library(deSolve) 
-#install.packages("tidyverse")
 library(tidyverse) 
-#install.packages("grid")
+#install.packages("tictoc")
 library(tictoc) 
 
-#VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV
-### DEB Dynamic energy budget model ####
-#VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV
+# DEB Dynamic energy budget model ####
 
+# Paramters kappa,ha,eps1,eps2 from optimization
 load("optim_Pars.RData")
-deb.optim$par
-# kappa,ha,eps1,eps2
 
-## Allometric parameters 
+# Allometric parameters 
 rho1 <- 0.02 # Maintenance allometric scalar 
 rho2 <- 0.76 # Maintenance allometric exponent
-eps1 <- deb.optim$par[3]#1.55 # Consumption allometric scalar
-eps2 <- deb.optim$par[4]#0.54 # Consumption allometric exponent
+eps1 <- deb.optim$par[3] # Consumption allometric scalar
+eps2 <- deb.optim$par[4] # Consumption allometric exponent
 
-## DEB-parameters 
+# DEB-parameters 
 alpha <- 0.4   # assimilation efficiency
 sl <- 183      # Season length in days, i.e. number of growth time steps
 kap_fun <- function(m, kappa, ha=deb.optim$par[2]){kappa*exp(-m/(ha*max(x)))} #for body size dep. kappa
 # kap_fun <- function(m, kappa, ha=2){kappa} #for body size indep. kappa
 
-## Temperature scaling parameter values, Lindmark et al. 2022, Global change biol.
+# Temperature scaling parameter values, Lindmark et al. 2022, Global change biol.
 T0 <-  292            # Reference Temp
 k  <-  8.617333e-05   # Boltzmann constant
 EaC <- 0.73 # activation energy Consumption
 EaM <- 0.62 # activation energy Maintenance
 EdC <- 1.89 # deactivation energy
 Td  <- T0 + 0.75 # temperature at which half the rate is reduced due to temperature
-bTc <- 1.824953#0.79 # rate at reference (a common) temperature Sharpe-Schoolf
+bTc <- 1.824953 #0.79/rC_T_Pad(292) rate at reference (a common) temperature Sharpe-Schoolf
 
 # Parameters for temperatur, allocation and feeding level (not used in analysis and excluded the main text) for testing demographic function
 test_Pars <- c(T = 287, kappa = deb.optim$par[1], Y = 1) 
 
-### Temperature dependence ####
-
+# Temperature dependence ####
 # Boltzmann-Arrhenius function
 rM_T_A <- function(T) {  
   exp(EaM*(T-T0)/(k*T*T0)) }
 
 # Sharpe-Schoolfield (as in Padfield) for unimodal consumption over temperature
-rC_T_Pad <- function(T) { # GU Temp dependence of asim_energy
+rC_T_Pad <- function(T) { 
   bTc * exp(EaC*(T-T0)/(k*T*T0)) * (1+exp(EdC*(T-Td)/(k*T*Td)))^(-1) }
 
 ###  TEMP & MASS DEPENDENT RATE FUNCTION ####
@@ -61,7 +55,6 @@ rC_T_Pad <- function(T) { # GU Temp dependence of asim_energy
 # ratefun() returns an 3d array where rows is days, cols is rates, dim is size in m_s
 # if m_s is a single value, ratefun returns a matrix.
 # asim_energy ís energy available for growth, reproduction and maintenance
-
 dwdt <- function(time, m, Pars) {
   with(as.list(c(m, Pars)), {
     maintenance <- (rho1*(m^rho2)*rM_T_A(T)) # Maintenance rate at time, mass with Pars
@@ -81,14 +74,12 @@ ratefun <- function(m, Pars) { # mean function for m_s+1 over one time step (one
   return(a) 
 }
 
-#VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV
-### IPM Integral projection model ####
-#VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV
+# IPM Integral projection model ####
 
-### SIZES & PARAMETERS FOR IPM ####
+# SIZES & PARAMETERS FOR IPM ####
 mmin <- 1     # min weight
 mmax <- 20000 # max weight
-n <- 1400  # the size class bin width, or matrix mesh size
+n <- 1000  # the size class bin width, or matrix mesh size
 x <- seq(mmin,mmax, length=n) # x is m_s in main text
 dx <- x[2] - x[1] # step size (grams) in the continuous size spectra
 dy <- dx # the IPM discretization is a square matrix, growth and age1 size is summed over y
@@ -96,10 +87,6 @@ x <- seq(mmin+dx/2,mmax+dx/2,dx) #for midpoint rule in IPM
 
 e_m <- 0.00351388  # Egg mass calculated from Windermere pike: mean(data.f$Egg_weight))) 
 el_surv = 1.9e-4  # egg & larvae survival. Vindenes 2014 based on Kipling and Frost 1970
-
-# tic()
-#ratefun(x, test_Pars)
-# toc()
 
 # Length-weight and weight-length relationship from Windermere
 ltow  <-  function(l){exp(-6.49286)*l^3.4434} 
@@ -110,7 +97,6 @@ wtol <- function(w){(w/exp(-6.49286))^(1/3.4434)}
 ### GROWTH g(m_s+1; m_s, T) ####
 # growthfun() returns a vector with a size distribution if given a single size m
 # or if m is a vector, a matrix where columns are size distributions y from each entry in m.
-
 growthfun <- function(m, y_g, Pars, y=x) {
   xsd <- function(mu, nu.var = -0.0001,  sdres = 300){ # sd for mu
     sdres * exp(nu.var*mu) }
@@ -128,22 +114,6 @@ growthfun <- function(m, y_g, Pars, y=x) {
 # Allocation to reproduction starts when an individual reaches maturation size, 
 # even if that occurs during s -> s+1 making reproductive reserve in s+1 
 # dependent on number of days as mature in s. Mean egg weight 0.00351388 in Lake Windermere data
-
-# repfun <- function(m, Pars, e_m = 0.00351388) { #
-#   Devm = 417 # mean maturation size from data
-#   fecund <- function(m, Pars, e_m) {
-#     with(as.list(c(m, Pars)), {
-#       f <- ratefun(m, Pars) #FÖR ETT VÄRDE PÅ X!!!
-#       f <- ifelse(f[,"mass",] < Devm,  0, #is it mature? # see text for the following conditions...
-#                   ifelse(kap_fun(f[,"mass",],kappa)*f[,"asim_energy",] >= f[,"maintenance",], f[,"asim_energy",]*(1-kap_fun(f[,"mass",],kappa)), #can available energy from asim_energy cover maintenance, NOTE:asim_energy is already scaled with Y*alpha
-#                          ifelse(kap_fun(f[,"mass",],kappa)*f[,"asim_energy",] < f[,"maintenance",] & (f[,"maintenance",] <= f[,"asim_energy",]),
-#                                 (1-kap_fun(f[,"mass",],kappa))*f[,"asim_energy",] + kap_fun(f[,"mass",],kappa)*f[,"asim_energy",] - f[,"maintenance",], 0)))
-#       sum(f)/e_m * 0.5 # Summed energy allocated to reproduction reserve in one season divided by egg weight and 0.5 from sex ratio (half of the eggs are female)
-#     })
-#   }
-#   sapply(X=m, FUN=fecund, Pars, e_m)
-# }
-
 repfun <- function(m, y_g, Pars, e_m = 0.00351388) { #
   Devm = 417 # mean maturation size from data
   with(as.list(c(m, y_g, Pars)), {
@@ -162,7 +132,6 @@ repfun <- function(m, y_g, Pars, e_m = 0.00351388) { #
 ### AGE 1 SIZE DISTRIBUTION o(e_m,T)####
 # Mean size (mu) using ratefun() based on half a growing season.
 # Variance from Windermere: sd(ltow((data.g[data.g$Age==1,]$Length)))
-
 age1size <- function(Pars, y=x, offvar = 48.12555^2){ 
   mu <- ratefun(e_m, Pars = c(T = Pars[["T"]], kappa = Pars[["kappa"]], Y = Pars[["Y"]]))[round(sl/2),2,] 
   yd <- dlnorm(y, meanlog=log(mu) - .5*log(1 + offvar/(mu^2)), sdlog=sqrt(log(1 + offvar/(mu^2))))
@@ -204,7 +173,6 @@ survfun <- function(m, Pars) { # Mass-Temp dependence of yearly survival
 # the other columns of Smat describe the growth and survival probability density of y (from x)
 # the first row is 0 to give way for an egg stage (the number of eggs produced by the sizes in x) through Fmat because at census for x, size x will give eggs at s+1 which will be offspring in s+2
 # Fmat is the egg stage, number of eggs produced for each x which becomes y1.
-
 K.matrix <- function(Pars) {
   y_g = ratefun(x, Pars)
   Smat = Fmat = matrix(0,n+1,n+1)
@@ -237,24 +205,29 @@ wvlambda.projection <- function(Kmat, N0=rep(10, length(Kmat[1,])), tol=1e-20) {
 }
 
 # Test the DEBIPM model for timing of each run and check that it sums to 1
-tic()
-onetest <- wvlambda.projection(K.matrix(test_Pars))
-toc()
-sum(onetest$w) # Hold my breath as I wish for death
-onetest$lambda
+# tic()
+# onetest <- wvlambda.projection(K.matrix(test_Pars))
+# toc()
+# sum(onetest$w) # Hold my breath as I wish for death
+# onetest$lambda # mean fitness for test_Pars
+
 ### SENSITIVITY OF THE DEBIPM ####
 ## Numerical expression for the derivatives for mass and temperature specific 
 ## demographic functions with respect to kappa_0
 
 # Growth function pert.
 G_NumDer <- function(h ,m, Pars){
-  (growthfun(m, Pars = c(T = Pars[["T"]],kappa = Pars[["kappa"]] + h,Y = Pars[["Y"]])) -
-     growthfun(m, Pars = c(T = Pars[["T"]],kappa = Pars[["kappa"]],Y = Pars[["Y"]])))/h
+  (growthfun(m, y_g = ratefun(m, Pars = c(T = Pars[["T"]],kappa = Pars[["kappa"]] + h,Y = Pars[["Y"]])),
+             Pars = c(T = Pars[["T"]],kappa = Pars[["kappa"]] + h,Y = Pars[["Y"]])) -
+     growthfun(m, y_g = ratefun(m, Pars = c(T = Pars[["T"]],kappa = Pars[["kappa"]],Y = Pars[["Y"]])),
+               Pars = c(T = Pars[["T"]],kappa = Pars[["kappa"]],Y = Pars[["Y"]])))/h
 } 
 # Fecundity function pert.
 F_NumDer <- function(h ,m, Pars){
-  (repfun(m, Pars = c(T = Pars[["T"]],kappa = Pars[["kappa"]] + h,Y = Pars[["Y"]])) - 
-     repfun(m, Pars = c(T = Pars[["T"]],kappa = Pars[["kappa"]],Y = Pars[["Y"]])))/h
+  (repfun(m, y_g = ratefun(m, Pars = c(T = Pars[["T"]],kappa = Pars[["kappa"]] + h,Y = Pars[["Y"]])),
+          Pars = c(T = Pars[["T"]],kappa = Pars[["kappa"]] + h,Y = Pars[["Y"]])) - 
+     repfun(m, y_g = ratefun(m, Pars = c(T = Pars[["T"]],kappa = Pars[["kappa"]],Y = Pars[["Y"]])),
+            Pars = c(T = Pars[["T"]],kappa = Pars[["kappa"]],Y = Pars[["Y"]])))/h
 }
 # Age 1 size function pert.
 A1_NumDer <- function(h ,m, Pars){
