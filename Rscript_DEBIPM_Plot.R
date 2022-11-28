@@ -4,23 +4,23 @@ library(scales)
 library(patchwork) 
 library(grid)   # for viewport()
 
-# # Length-weight relationship from Windermere
-# data.f$body_mass <- ltow(data.f$Length)
-# data.g$body_mass <- ltow(data.g$Length)
-# for(i in 1:nrow(data.g)){ # sorry  for the slow loop, its to get age from years (from back calculated data)
-#   data.g$Age[i] <- 
-#     (data.g[i,]$Year)-min(data.g[data.g$Ind==data.g[i,"Ind"], ]$Year)+1
-# }
-# data.f$Egg_mass <- data.f$Egg_number*data.f$Egg_weight
+# Length-weight relationship from Windermere
+data.f$body_mass <- ltow(data.f$Length)
+data.g$body_mass <- ltow(data.g$Length)
+for(i in 1:nrow(data.g)){ # sorry  for the slow loop, its to get age from years (from back calculated data)
+  data.g$Age[i] <-
+    (data.g[i,]$Year)-min(data.g[data.g$Ind==data.g[i,"Ind"], ]$Year)+1
+}
+data.f$Egg_mass <- data.f$Egg_number*data.f$Egg_weight
 
-#Colorscheme from blue to red scale_color_manual(values = c('#4575b4','#91bfdb','#e0f3f8','#fee090','#fc8d59','#d73027'))+
+# Colorscheme from blue to red scale_color_manual(values = c('#4575b4','#91bfdb','#e0f3f8','#fee090','#fc8d59','#d73027'))+
 
 ## Load in results for Main and Contrast results ####
 # Results Baseline scenario
-Res_lam_1 <- read.delim("//storage-og.slu.se/home$/vitl0001/My Documents/Manus2/Results/Results221011/Res_lam_1_2022-10-07.txt", sep = ",")
-Res_v_1 <- read.delim("//storage-og.slu.se/home$/vitl0001/My Documents/Manus2/Results/Results221011/Res_v_1_2022-10-07.txt", sep = ",")
+Res_lam_1 <- read.delim("Res_lam_1_2022-10-07.txt", sep = ",")
+Res_v_1 <- read.delim("Res_v_1_2022-10-07.txt", sep = ",")
 colnames(Res_v_1)[4:ncol(Res_v_1)] <- sub("X", "", colnames(Res_v_1)[4:ncol(Res_v_1)])
-Res_w_1 <- read.delim("//storage-og.slu.se/home$/vitl0001/My Documents/Manus2/Results/Results221011/Res_w_1_2022-10-07.txt", sep = ",")
+Res_w_1 <- read.delim("Res_w_1_2022-10-07.txt", sep = ",")
 colnames(Res_w_1)[4:ncol(Res_w_1)] <- sub("X", "", colnames(Res_w_1)[4:ncol(Res_w_1)])
 
 # Retrieve max lambda for each temperature for baseline results
@@ -124,7 +124,6 @@ oT <-
   ggplot(., aes(as.numeric(Size), biom, color = as.factor(T), linetype = as.factor(T))) +
   geom_line(size=0.85) +
   scale_x_continuous(expression(paste("Mass ",italic("m")[s]," [g]")), limits = c(0,300),breaks = seq(0,300,100)) +
-  #annotate(geom="text", -Inf, Inf, label="d", hjust = -2, vjust = 3, size= 9/2.845276, fontface = "bold") +
   ylab(expression(paste(italic("o"),"(",italic("m"["s+1"]),italic(":T"),")"))) +
   scale_color_manual(values = c('#4575b4','#91bfdb','#fee090','#fc8d59','#d73027'), name="Temp [K]") +
   scale_linetype_manual(values = c('solid','solid','solid','dashed','dashed'), guide =NULL ) +
@@ -159,7 +158,7 @@ surT <-
 
 ### FIG 3E,F - STABLE STRUCTURE W ####
 Res_w_1_long <- pivot_longer(as.data.frame(Res_w_1), cols = c(4:ncol(Res_w_1)), 
-                           names_to = "Size", values_to ="biom") # not use column 4 & 5 (eggstage and recruits)
+                           names_to = "Size", values_to ="biom") 
 Fig3e_1 <- 
   Res_w_1_long %>%
   filter(T %in% c(285, 287, 289, 291, 293)) %>%
@@ -188,7 +187,7 @@ Fig3e_2 <- Res_w_1_long %>%
   theme_light(base_size=9) +
   theme(legend.position="none",
         axis.title.x=element_blank(),
-        plot.background = element_rect(fill = "transparent", color = NA), # bg of the plot
+        plot.background = element_rect(fill = "transparent", color = NA), 
         axis.title.y=element_blank())
 
 mycolors <- colorRampPalette(colors=c("#feebe2","#ce1256"))(9)
@@ -222,7 +221,7 @@ Fig2 <-
   ggplot(., aes(T,kappa)) +
   geom_raster(aes(fill=Lambda)) +
   geom_line(data=maxl_1,aes(T,kappa),size=0.8) +
-  scale_fill_gradientn( #here Im choosing values for the scale that is within the kappa-temp space that Im plotting
+  scale_fill_gradientn( 
     limits = c(min(as.data.frame(Res_lam_1[Res_lam_1$kappa>0.65 & Res_lam_1$T<292.25, ][,'Lambda'])),max(as.data.frame(Res_lam_1[,'Lambda']))),
     colours = c("black","white","#f1eef6","#ce1256"),
     values = rescale(c(min(as.data.frame(Res_lam_1[Res_lam_1$kappa>0.65 & Res_lam_1$T<292.25, ][,'Lambda'])),0.9999,1, max(as.data.frame(Res_lam_1[,'Lambda']))),
@@ -289,13 +288,13 @@ survfun <- function(m, Pars) {
 
 Tsur <- NULL
 for(i in seq(285,293,2)){
-  Tsur_pars <- c(T = i,     # parameters for Temperature, feeding, allocation and Mass dependence
-                 kappa = test_Pars[["kappa"]], # allocation to respiration (Growth and maintenance)
+  Tsur_pars <- c(T = i,     
+                 kappa = test_Pars[["kappa"]], 
                  Y=test_Pars[["Y"]])
   Tsur <- as.data.frame(rbind(Tsur, c(Tsur_pars,survfun(x, Tsur_pars))))
 }
 colnames(Tsur)[4:ncol(Tsur)] <- c(x)
-Tsur_long <- pivot_longer(Tsur, cols = c(4:ncol(Tsur)), names_to = "Size", values_to = "biom") # not use column 10 & 11 (eggstage and recruits)
+Tsur_long <- pivot_longer(Tsur, cols = c(4:ncol(Tsur)), names_to = "Size", values_to = "biom") 
 
 Fig4D <-
   Tsur_long %>%
@@ -312,9 +311,9 @@ Fig4D <-
         legend.key.width = unit(1, 'cm'))
 
 # Define survfun for Temperature independent version of Vindenes et al. 2014
-survfun <- function(m, Pars) { # Mass-Temp dependence of yearly Mortality 
-  Vsurvfun <- function(m, z=10.34){ # temperature independent survival function
-    sxV <- function(m, z=10.34){ # sx from Vindenes 2014
+survfun <- function(m, Pars) { 
+  Vsurvfun <- function(m, z=10.34){ 
+    sxV <- function(m, z=10.34){ 
       1/(1+exp(13.53316 - 0.50977*wtol(m) - (-0.00393)
                *wtol(m)^2 - 0.19312*z - (-0.00679)
                *wtol(m)*z))
@@ -342,14 +341,14 @@ survfun <- function(m, Pars) { # Mass-Temp dependence of yearly Mortality
 
 Tsur <- NULL
 for(i in seq(285,293,2)){
-  Tsur_pars <- c(T = i,     # parameters for Temperature, feeding, allocation and Mass dependence
-                 kappa = test_Pars[["kappa"]], # allocation to respiration (Growth and maintenance)
+  Tsur_pars <- c(T = i,
+                 kappa = test_Pars[["kappa"]],
                  Y=test_Pars[["Y"]])
   Tsur <- as.data.frame(rbind(Tsur, c(Tsur_pars,survfun(x, Tsur_pars))))
 }
 colnames(Tsur)[4:ncol(Tsur)] <- c(x)
 
-Tsur_long <- pivot_longer(Tsur, cols = c(4:ncol(Tsur)), names_to = "Size", values_to = "biom") # not use column 10 & 11 (eggstage and recruits)
+Tsur_long <- pivot_longer(Tsur, cols = c(4:ncol(Tsur)), names_to = "Size", values_to = "biom")
 Fig4B <-
   Tsur_long %>%
   ggplot(., aes(as.numeric(Size), biom, color = as.factor(T))) +
@@ -365,10 +364,10 @@ Fig4B <-
         legend.position="none",
         legend.key.width = unit(1, 'cm'))
 
-# Constant survival (0.68)
-survfun <- function(m, Pars) { # Mass-Temp dependence of yearly Mortality 
-  Vsurvfun <- function(m, z=10.34){ # temperature independent survival function
-    sxV <- function(m, z=10.34){ # sx from Vindenes 2014
+# Constant survival (=0.68)
+survfun <- function(m, Pars) {
+  Vsurvfun <- function(m, z=10.34){
+    sxV <- function(m, z=10.34){
       1/(1+exp(13.53316 - 0.50977*wtol(m) - (-0.00393)
                *wtol(m)^2 - 0.19312*z - (-0.00679)
                *wtol(m)*z))
@@ -376,9 +375,9 @@ survfun <- function(m, Pars) { # Mass-Temp dependence of yearly Mortality
     xmax <- x[which(sxV(x) == max(sxV(x)))]
     ifelse(m < xmax, sxV(m), sxV(xmax))
   }
-  VsurvfunT <- function(m, Pars){ # temperature dependent survival function
-    zT=10.34+Pars[["T"]]-287 # make 287 equal to 283 survival in Vindenes 2014 since 283 is yearly mean Temp 287 is summer mean temp
-    sxV <- function(m, z=zT){ # sx from Vindenes 2014
+  VsurvfunT <- function(m, Pars){
+    zT=10.34+Pars[["T"]]-287
+    sxV <- function(m, z=zT){
       1/(1+exp(13.53316 - 0.50977*wtol(m) - (-0.00393)
                *wtol(m)^2 - 0.19312*z - (-0.00679)
                *wtol(m)*z))
@@ -386,7 +385,7 @@ survfun <- function(m, Pars) { # Mass-Temp dependence of yearly Mortality
     xmax <- x[which(sxV(x) == max(sxV(x)))]
     ifelse(m < xmax, sxV(m), sxV(xmax))
   }
-  sx.firstyear <- function(m, Pars){ # first year survival
+  sx.firstyear <- function(m, Pars){
     el_surv }
   # Choose survival scenario below, compare fig. 4 main text.
   #ifelse(m < mmin, sx.firstyear(m,Pars), VsurvfunT(m,Pars)) # main, i.e. size and temp depedent, survival
@@ -400,7 +399,7 @@ for(i in seq(285,293,2)){
   Tsur <- as.data.frame(rbind(Tsur, c(Tsur_pars,survfun(x, Tsur_pars))))
 }
 colnames(Tsur)[4:ncol(Tsur)] <- c(x)
-Tsur_long <- pivot_longer(Tsur, cols = c(4:ncol(Tsur)), names_to = "Size", values_to = "biom") # not use column 10 & 11 (eggstage and recruits)
+Tsur_long <- pivot_longer(Tsur, cols = c(4:ncol(Tsur)), names_to = "Size", values_to = "biom")
 
 Fig4C <-
   Tsur_long %>%
@@ -419,9 +418,9 @@ Fig4C <-
         legend.key.width = unit(1, 'cm')) 
 
 # define main model survfun again for use in further calculations
-survfun <- function(m, Pars) { # Mass-Temp dependence of yearly Mortality 
-  Vsurvfun <- function(m, z=10.34){ # temperature independent survival function
-    sxV <- function(m, z=10.34){ # sx from Vindenes 2014
+survfun <- function(m, Pars) {
+  Vsurvfun <- function(m, z=10.34){
+    sxV <- function(m, z=10.34){
       1/(1+exp(13.53316 - 0.50977*wtol(m) - (-0.00393)
                *wtol(m)^2 - 0.19312*z - (-0.00679)
                *wtol(m)*z))
@@ -429,9 +428,9 @@ survfun <- function(m, Pars) { # Mass-Temp dependence of yearly Mortality
     xmax <- x[which(sxV(x) == max(sxV(x)))]
     ifelse(m < xmax, sxV(m), sxV(xmax))
   }
-  VsurvfunT <- function(m, Pars){ # temperature dependent survival function
-    zT=10.34+Pars[["T"]]-287 # make 287 equal to 283 survival in Vindenes 2014 since 283 is yearly mean Temp 287 is summer mean temp
-    sxV <- function(m, z=zT){ # sx from Vindenes 2014
+  VsurvfunT <- function(m, Pars){
+    zT=10.34+Pars[["T"]]-287
+    sxV <- function(m, z=zT){
       1/(1+exp(13.53316 - 0.50977*wtol(m) - (-0.00393)
                *wtol(m)^2 - 0.19312*z - (-0.00679)
                *wtol(m)*z))
@@ -453,7 +452,7 @@ OptPars <-
   as.data.frame(maxl_1[,1:3]) %>%
   filter(T %in% c(287, 289, 291))
 
-#Calculate sensitivities based on methods in supplement S4
+#Calculate sensitivities
 Res_Sens <-NULL
 for (i in 1:nrow(OptPars)){
   res_v <- as.numeric(Res_v_1 %>% filter(T == OptPars[i,1] & kappa==OptPars[i,2]))[4:ncol(Res_v_1)]
@@ -489,7 +488,6 @@ s_sum <- Res_Sens %>%
 s_sum_text <- data.frame(Size = c(3000,3000,3000,6000,6000,6000,8500,8500,8500), Sens = 0.075,
                       dfun = s_sum$dfun, Temp = s_sum$Temp, label = round(s_sum$sum.c,3))
 
-# create Fig 5
 Fig5 <-
   Res_Sens %>%
   mutate(dfun=as.factor(dfun)) %>%

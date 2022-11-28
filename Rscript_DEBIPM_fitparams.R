@@ -1,7 +1,10 @@
+############### THUNELL ET AL. DEBI-PM R-script - parameter fitting #########################
 # Code to fit DEB parameters
 
-# Created: October 3, 2022 by EPD (Elizabeth Duskey)
-# Last modified: October 20, 2022 by Viktor Thunell
+# This code was created: October 3, 2022 by 
+# EPD (Elizabeth Duskey, https://github.com/epduskey)
+
+# Last modified: November 28, 2022 by Viktor Thunell
 
 # Load packages
 #install.packages("deSolve")
@@ -11,7 +14,6 @@ library(optimParallel)
 #install.packages("tidyverse")
 library(tidyverse)
 
-# Contents (ctrl-f):
 #	0a. Common values
 #	0b. Common functions
 #	I. Load data
@@ -51,7 +53,7 @@ k = 8.617333e-05
 # Temperature scaling parameter values, Lindmark et al. 2022, Global change biol.
 EaC = 0.73 # Activation energy Consumption
 EaM = 0.62 # Activation energy Maintenance
-EdI = 1.89 # Deactivation energy
+EdC = 1.89 # Deactivation energy
 
 # temperature at which half the rate is reduced due to temperature
 Td = T0 + 0.75 
@@ -83,14 +85,13 @@ rM_T_A = function(T) {
 #	T: temperature
 #	returns temperature
 rC_T_Pad <- function(T) { 
-		bTc * exp(EaC*(T-T0)/(k*T*T0)) * (1+exp(EdI*(T-Td)/(k*T*Td)))^(-1) 
+		bTc * exp(EaC*(T-T0)/(k*T*T0)) * (1+exp(EdC*(T-Td)/(k*T*Td)))^(-1) 
 }
 
 # For body size dependent consumption (assimilation)
 #	m: mass
-#	kappa: baseline metabolism (?)
-#	returns assimilation
-asim_fun = function(m, eps1, eps2){
+#	returns consumption
+cons_fun = function(m, eps1, eps2){
 	eps1*(m^eps2)
 }
 
@@ -101,7 +102,7 @@ asim_fun = function(m, eps1, eps2){
 dwdt <- function(time, m, Pars) {
 	with(as.list(c(m, Pars)), {
 		maintenance = (rho1*(m^rho2)*rM_T_A(T))
-		asim_energy = alpha*Y*asim_fun(m,eps1,eps2)*rC_T_Pad(T)
+		asim_energy = alpha*Y*cons_fun(m,eps1,eps2)*rC_T_Pad(T)
 		mass = kap_fun(m,kappa,ha)*asim_energy - maintenance
 		return(list(mass, maintenance, asim_energy))
 	})
@@ -121,7 +122,7 @@ ratefun = function(m, Pars) { # mean function for m_s+1 over one time step (one 
 }
 
 # Modeled growth and fecundity
-# 	parEst: parameter estimates
+# parEst: parameter estimates
 #	Temp: temperature
 #	t: number of time steps
 #	gdat: growth data
@@ -161,7 +162,7 @@ growth = read.csv("PikeGrowthData1944_1995.csv")
 # Read in fecundity data
 fecundity = read.csv("Windermere_Pike_Fecundity_and_Egg_Data_1963_to_2003.csv")
 
-# Read in temepartrue data
+# Read in temperature data
 temperature = read.csv("WindermereMonthlyTemp1946_2012.csv")
 
 ########## II. Process data ##########
@@ -318,14 +319,13 @@ stopCluster(cl)
 out.optim = project(deb.optim$par, Temp, t, growthTemp_select, fecTemp_select)
 deb.optim$par
 
-#save(deb.optim, file = "optim_Pars2.RData")
-#save(deb.optim, file = "optim_Pars_alldat.RData")
+#save(deb.optim, file = "optim_Pars.RData")
 #save(deb.optim, file = "optim_Pars_mi.RData")
 
 ########## VI. Bootstrap confidence intervals ##########
 
 # Choose number of iterations
-n = 1000
+n = 10 #1000 used for cf in S2
 
 # Output data frame
 boot.deb = matrix(nrow = n, ncol = 4)

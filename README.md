@@ -11,5 +11,5 @@ Rscript_DEBIPM_RunModels - To run the DEBIPM to produce data for the main (1) an
 
 Rscript_DEBIPM_Plot - Code for graphically exploring the model, calculating sensitivities and creating the figures (Fig. 1-5) in the main text.
 
-Supplement_DEBIPM - Rmarkdown file for plots and text in Supplement
+Appendix_S1 - Rmarkdown file for plots and text in Supplement
 

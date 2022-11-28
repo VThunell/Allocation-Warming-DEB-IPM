@@ -1,5 +1,5 @@
 
-############### THUNELL ET AL. 20XX DEBIPM R-script - MODEL #########################
+############### THUNELL ET AL. DEB-IPM R-script - MODEL #########################
   
 data.g <-read.csv("PikeGrowthData1944_1995.csv", sep=",")
 data.f <-read.csv("Windermere_Pike_Fecundity_and_Egg_Data_1963_to_2003.csv", sep=",")
@@ -28,7 +28,7 @@ sl <- 183      # Season length in days, i.e. number of growth time steps
 kap_fun <- function(m, kappa, ha=deb.optim$par[2]){kappa*exp(-m/(ha*max(x)))} #for body size dep. kappa
 # kap_fun <- function(m, kappa, ha=2){kappa} #for body size indep. kappa
 
-# Temperature scaling parameter values, Lindmark et al. 2022, Global change biol.
+# Temperature scaling parameter values from Lindmark et al. 2022, Global change biol.
 T0 <-  292            # Reference Temp
 k  <-  8.617333e-05   # Boltzmann constant
 EaC <- 0.73 # activation energy Consumption
@@ -37,7 +37,7 @@ EdC <- 1.89 # deactivation energy
 Td  <- T0 + 0.75 # temperature at which half the rate is reduced due to temperature
 bTc <- 1.824953 #0.79/rC_T_Pad(292) rate at reference (a common) temperature Sharpe-Schoolf
 
-# Parameters for temperatur, allocation and feeding level (not used in analysis and excluded the main text) for testing demographic function
+# Parameters for temperature, allocation and feeding level  Y (which is not used in analysis and excluded the main text) for testing demographic function
 test_Pars <- c(T = 287, kappa = deb.optim$par[1], Y = 1) 
 
 # Temperature dependence ####
@@ -56,13 +56,11 @@ rC_T_Pad <- function(T) {
 # if m_s is a single value, ratefun returns a matrix.
 # asim_energy ís energy available for growth, reproduction and maintenance
 dwdt <- function(time, m, Pars) {
-  with(as.list(c(m, Pars)), {
-    maintenance <- (rho1*(m^rho2)*rM_T_A(T)) # Maintenance rate at time, mass with Pars
-    asim_energy <- alpha*Y*eps1*(m^eps2)*rC_T_Pad(T)
-    mass <- ifelse(kap_fun(m,kappa)*asim_energy >= maintenance, kap_fun(m,kappa)*asim_energy - maintenance,
-                   ifelse(kap_fun(m,kappa)*asim_energy < maintenance & maintenance <= asim_energy, 0, asim_energy - maintenance))
-    return(list(mass, maintenance, asim_energy)) # return all rates ti ratefun
-  })
+    maintenance <- (rho1*(m^rho2)*rM_T_A(Pars[["T"]])) # Maintenance rate at time, mass with Pars
+    asim_energy <- alpha*eps1*(m^eps2)*rC_T_Pad(Pars[["T"]])
+    mass <- ifelse(kap_fun(m,Pars[["kappa"]])*asim_energy >= maintenance, kap_fun(m,Pars[["kappa"]])*asim_energy - maintenance,
+                   ifelse(kap_fun(m,Pars[["kappa"]])*asim_energy < maintenance & maintenance <= asim_energy, 0, asim_energy - maintenance))
+    return(list(mass, maintenance, asim_energy)) # return all rates to ratefun
 }
 
 ratefun <- function(m, Pars) { # mean function for m_s+1 over one time step (one season). 
@@ -92,9 +90,9 @@ el_surv = 1.9e-4  # egg & larvae survival. Vindenes 2014 based on Kipling and Fr
 ltow  <-  function(l){exp(-6.49286)*l^3.4434} 
 wtol <- function(w){(w/exp(-6.49286))^(1/3.4434)}
 
-### DEMOGRAPHIC RATE FUNCTIONS ####
+# DEMOGRAPHIC RATE FUNCTIONS ####
 
-### GROWTH g(m_s+1; m_s, T) ####
+## GROWTH g(m_s+1; m_s, T) ####
 # growthfun() returns a vector with a size distribution if given a single size m
 # or if m is a vector, a matrix where columns are size distributions y from each entry in m.
 growthfun <- function(m, y_g, Pars, y=x) {
@@ -113,7 +111,7 @@ growthfun <- function(m, y_g, Pars, y=x) {
 ### REPRODUCTION f(m_s,T) ####
 # Allocation to reproduction starts when an individual reaches maturation size, 
 # even if that occurs during s -> s+1 making reproductive reserve in s+1 
-# dependent on number of days as mature in s. Mean egg weight 0.00351388 in Lake Windermere data
+# dependent on number of days as mature in s. Mean egg weight 0.00351388 in Windermere data
 repfun <- function(m, y_g, Pars, e_m = 0.00351388) { #
   Devm = 417 # mean maturation size from data
   with(as.list(c(m, y_g, Pars)), {
@@ -150,7 +148,7 @@ survfun <- function(m, Pars) { # Mass-Temp dependence of yearly survival
     ifelse(m < xmax, sxV(m), sxV(xmax))
   }
   VsurvfunT <- function(m, Pars){ # temperature dependent survival function
-    zT=10.34+Pars[["T"]]-287 # make 287 equal to 283 survival in Vindenes 2014 since 283 is yearly mean temp, 287 is summer mean temp whihc we use for the growth function
+    zT=10.34+Pars[["T"]]-287 # make 287 equal to 283 survival in Vindenes 2014 since 283 is yearly mean temp, 287 is summer mean temp which we use for the growth function
     sxV <- function(m, z=zT){ # sx from Vindenes 2014
       1/(1+exp(13.53316 - 0.50977*wtol(m) - (-0.00393)
                *wtol(m)^2 - 0.19312*z - (-0.00679)
