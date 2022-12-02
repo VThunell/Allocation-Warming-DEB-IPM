@@ -13,8 +13,6 @@ output:
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
-setwd("C:/Users/vitl0001/VThunell_repos/Temperature-DEBIPM")
-library(patchwork) 
 ```
 
 1. Department of Aquatic Resources, Swedish University of Agricultural Sciences, Box 7018, 750 07 Uppsala, Sweden
@@ -71,7 +69,7 @@ Eb <- E_bud_long %>%
   xlab("Mass [g]" ) +
   ylab("Energy [g]" ) +
   ggtitle('(d)') +
-  theme_light(base_size=9) +
+  theme_light(base_size=8) +
   theme(plot.title = element_text(size = 9, face = "bold")) 
 
 ### Plot Size functions
@@ -88,7 +86,7 @@ Sr <- Srate_long %>%
                         labels = c("Consumption","Maintenenance")) +
   ylab("Effect [g/day]") +
   ggtitle('(a)') +
-  theme_light(base_size=9) +
+  theme_light(base_size=8) +
   theme(plot.title = element_text(size = 9, face = "bold"), 
         legend.position="none")
 
@@ -105,7 +103,7 @@ ggplot() +
   scale_linetype_manual(values = c("solid","dashed"), labels = c("Consumption","Maintenenance")) +
   ylab("") +
   ggtitle('(b)') +
-  theme_light(base_size=9) +
+  theme_light(base_size=8) +
   theme(plot.title = element_text(size = 9, face = "bold")) 
 
 Kf_long <- rbind( tibble(Size=x, val = 1-kap_fun(x,kappa=deb.optim$par[1]), k="Rep. reserve"),
@@ -117,7 +115,7 @@ ggplot(Kf_long) +
   scale_color_manual(values = c( "#cccccc" ,"#252525" ), name="") +
   scale_x_continuous(expand = c(0,0), name = "Mass [g]", limits = c(0,20000), breaks = seq(0,20000,5000)) +
   ggtitle('(c)') +
-  theme_light(base_size=9) +
+  theme_light(base_size=8) +
   theme(plot.title = element_text(size = 9, face = "bold"),
         legend.position="none",
         legend.key.width = unit(1, 'cm')) 
@@ -162,14 +160,14 @@ T_rates_long["g_g_day"] <- T_rates_long$g_day/T_rates_long$mass
 T_rates_long %>%
   filter(as.factor(mass) %in% c(T_rates_long$mass[c(5,50,500,5000)])) %>%
   ggplot(.) +
-    geom_line(size=1 , aes(Temp, g_day, color = as.factor(mass), 
+    geom_line(size=0.7 , aes(Temp, g_day, color = as.factor(mass), 
                          linetype = as.factor(E_type))) +
     scale_color_manual(values = c( "#252525", "#636363", "#969696", "#cccccc" ), name = "Mass [g]", labels = round(c(T_rates_long$mass[c(5,50,500,5000)]))) +
     scale_linetype_manual(values = c(  "solid", "dotted"), name = "Compartment", labels = c( "Growth", "Rep. reserve")) +
     ylab("Allocation rate [g/day]") +
     xlab("Temperature [K]") +
     ylim(0,NA)+
-    theme_light(base_size=9)
+    theme_light(base_size=8)
   
 ```
 
@@ -210,52 +208,52 @@ ranTraj <- bind_rows(ranTraja,ranTrajb)
 ranTraj_long <- pivot_longer(ranTraj, cols=3:12, names_to = "ind", values_to = "mass") 
 
 ranT <- 
- ggplot() +
-  geom_line(data=optim.data$growthTemp, aes(Age, ltow(Length), group = as.factor(Ind), color = "WData")) +
+ggplot() +
+  geom_line(data=data.g, aes(Age, ltow(Length), group = as.factor(Ind), color = "WData")) +
   geom_line(data=ranTraj_long, size=0.4,  aes(age, mass, group = interaction(as.factor(ind), as.factor(TK)), color = as.factor(TK), color="DEB-IPM")) +
   scale_color_manual(name = '', labels = c("DEB-IPM 287 K","DEB-IPM 291 K","Wind. data"), values = c('#91bfdb','#fc8d59',"black")) +
   ylab(expression(paste(italic("g"),"(",italic("m"["s+1"]),italic(",T"),")"))) +
   xlab("Age [years]") +
   ggtitle('(c)') +
-  theme_light(base_size=9) +
+  theme_light(base_size=8) +
   theme(plot.title = element_text(size = 9, face = "bold"),
         legend.key.width = unit(1, 'cm')) 
 ```
 
 ```{r, echo = FALSE, warning = FALSE, fig.height = 5, fig.width = 7}
-load("optim_data.RData")
+load("optim_pred.RData")
 
-gci <- as_tibble(optim.data$gci,c(20000,20000))
+gci <- as_tibble(pred$gci,c(20000,20000))
 colnames(gci) = c("low","high")
 
-fci <- as_tibble(optim.data$fci,c(20000,20000))
+fci <- as_tibble(pred$fci,c(20000,20000))
 colnames(fci) = c("low","high")
 
 groz <- 
 ggplot() +
-  geom_point(data = optim.data$growthTemp_select, aes(Age, mass), alpha=0.2) +
-  geom_point(data = optim.data$growthTemp, aes(Age, mass), alpha=0.2, shape=4) +
-  geom_line(data = optim.data$out.optim$g, aes(Age, Mass, color = "#91bfdb"), size=0.85) +
+  geom_point(data = growthTemp_select, aes(Age, mass), alpha=0.2) +
+  geom_point(data = data.g, aes(Age, body_mass), alpha=0.2, shape=4) +
+  geom_line(data = pred$g, aes(Age, Mass, color = "#91bfdb"), size=0.85) +
   geom_ribbon(data = gci, aes(x = 1:(nrow(gci)), ymin = low, ymax = high), fill = "grey", alpha=0.5) +
   ylab(expression(paste(italic("g"),"(",italic("m"["s+1"]),italic(",T"),")"))) +
   xlab("Age [years]") +
 scale_color_manual(values = c('#91bfdb'), name="Temp [K]") +
   ggtitle('(a)') +
-  theme_light(base_size=9) +
+  theme_light(base_size=8) +
   theme(plot.title = element_text(size = 9, face = "bold"),
         legend.position="none",
         legend.key.width = unit(1, 'cm'))   
 
 repz <- 
 ggplot() +
-  geom_point(data=optim.data$fecTemp_select, aes(mass, Egg_number*Egg_weight/e_m), alpha=0.2) +
-  geom_point(data=optim.data$fecTemp, aes(ltow(Length), Egg_number*Egg_weight/e_m), alpha=0.2, shape=4) +
-  geom_line(data = optim.data$out.optim$f, aes(mass, fecund), color = "#91bfdb", size=0.85) +
-  geom_ribbon(data = fci, aes(x = optim.data$out.optim$f$mass, ymin = low, ymax = high), fill = "grey", alpha=0.5) +
-  ylab(expression(paste(italic("f"),"(",italic("m"["s"]),italic(",T"),")"))) +
+  geom_point(data=fecTemp_select, aes(mass, Egg_number*Egg_weight/e_m), alpha=0.2) +
+  geom_point(data=data.f, aes(ltow(Length), Egg_mass/e_m), alpha=0.2, shape=4) +
+  geom_line(data = pred$f, aes(mass, fecund), color = "#91bfdb", size=0.85) +
+  geom_ribbon(data = fci, aes(x = pred$f$mass, ymin = low, ymax = high), fill = "grey", alpha=0.5) +
+    ylab(expression(paste(italic("f"),"(",italic("m"["s"]),italic(",T"),")"))) +
   xlab(expression(paste("Mass ",italic("m")[s]," [g]"))) +
   ggtitle('(b)') +
-  theme_light(base_size=9) +
+  theme_light(base_size=8) +
   theme(plot.title = element_text(size = 9, face = "bold"),
         legend.position="none",
         legend.key.width = unit(1, 'cm'))
@@ -302,7 +300,7 @@ Eb_const<-E_bud_long %>%
   xlab("Mass [g]" ) +
   ylab("Energy [g]" ) +
   ggtitle('(b)') +
-  theme_light(base_size=9) +
+  theme_light(base_size=8) +
   theme(plot.title = element_text(size = 9, face = "bold"),
         legend.key.width = unit(1, 'cm')) 
 
@@ -316,7 +314,7 @@ ggplot(Kf_long) +
   scale_color_manual(values = c( "#cccccc" ,"#252525" ), name="") +
   scale_x_continuous(expand = c(0,0), name = "Mass [g]", limits = c(0,20000),breaks = seq(0,20000,5000)) + 
   ggtitle('(a)') +
-  theme_light(base_size=9) +
+  theme_light(base_size=8) +
   theme(plot.title = element_text(size = 9, face = "bold"),
         legend.position="none") 
 
@@ -343,7 +341,7 @@ trajG_mi <- pivot_longer(traj, cols=c(2:6),names_to = "Temp", values_to = "mass"
 trajG_mi$Temp <- as.double(trajG_mi$Temp)
 
 groT_const <- ggplot(trajG_mi) +
-  geom_point(data=optim.data$growthTemp, aes(Age, mass), alpha=0.1) +
+  geom_point(data=data.g, aes(Age, body_mass), alpha=0.1) +
   geom_line(data = trajG_mi, size=0.85, aes(Age, mass, color = as.factor(Temp))) +
   ylab(expression(paste("Mass ", italic("\u03BC")["g"]," [g]"))) +
   xlab("Age [years]") +
@@ -351,12 +349,13 @@ groT_const <- ggplot(trajG_mi) +
   ylim(0,20000) +
   scale_color_manual(values = c('#4575b4','#91bfdb','#fee090','#fc8d59','#d73027'), name="Temp [K]") +
 ggtitle('(a)') +
-  theme_light(base_size=9) +
+  theme_light(base_size=8) +
   theme(plot.title = element_text(size = 9, face = "bold"),
         legend.position="none",
         legend.key.width = unit(1, 'cm')) 
 
 #### Plot size dependent fecundity, f(m_s,T) via repfun() ####
+# Note that we need to double (*2) the fecundity when plotting using repfun(). Repfun account only for female eggs.
 rep_mi=data.frame()
 for(i in 2:ncol(traj)){ # the temps, from 2nd last column in traj
   for(j in 1:nrow(traj)){ # the sizes in traj, i.e. Age traj
@@ -371,13 +370,13 @@ for(i in 2:ncol(traj)){ # the temps, from 2nd last column in traj
 }
 repT_const <-
   ggplot() +
-  geom_point(data=optim.data$fecTemp, aes(mass, Egg_number*Egg_weight/e_m), alpha=0.1) +
+  geom_point(data=data.f, aes(body_mass, Egg_mass/e_m), alpha=0.1) +
   geom_line(data=as_tibble(rep_mi), size=0.85, aes(mass, fec, color = as.factor(Temp)))+
   scale_color_manual(values = c('#4575b4','#91bfdb','#fee090','#fc8d59','#d73027'), name="Temp [K]")+
   ylab(expression(paste(italic("f"),"(",italic("m"["s"]),italic(",T"),")"))) +
   xlab(expression(paste("Mass ",italic("m")[s]," [g]"))) +
   ggtitle('(b)') +
-  theme_light(base_size=9) +
+  theme_light(base_size=8) +
   theme(plot.title = element_text(size = 9, face = "bold"),
         legend.key.width = unit(1, 'cm')) 
 
@@ -434,7 +433,7 @@ ggplot(., aes(x,w, color=as.factor(n))) +
   xlim(0,1500) +
   scale_color_discrete(name = expression(paste("# size classes" ))) + 
   ylab("Stable structure w") +
-  theme_light(base_size=9) +
+  theme_light(base_size=8) +
   theme(strip.text = element_text(color = "black"),
         strip.background = element_blank())
 
@@ -446,7 +445,7 @@ as_tibble(nlam) %>%
   ylab(expression(paste(italic(lambda)))) +
   xlim(200,NA) +
   xlab(expression(paste("# size classes"))) + 
-  theme_light(base_size=9)
+  theme_light(base_size=8)
 
 nL / nW
 
@@ -622,7 +621,7 @@ The sensitivity with respect to $\kappa_0$ is thus given by
 
 ## Section S6. Growth trajectories and fecundity at optimal energy allocation ($\kappa_0^*$)
 
-Size dependent growth and fecundity for optimal energy allocation to somatic growth $(\kappa_0^*)$ differs from those presented in Fig. 3 in the main text (i.e. with $\kappa_0=0.89$ which was used to fit the model). Compared to $\kappa_0=0.89$, optimal allocation in the  Windermere pike DEBIPM (main text Fig. 2) results in decreased size specific fecundity (Fig. S5b) and reduced growth  (mean size at age, Fig. S5A) for temperatures above 287 K, and increased growth below or equal to 287 K.  compared to $\kappa_0=0.89$. 
+Size dependent growth and fecundity for optimal energy allocation to somatic growth $(\kappa_0^*)$ differs from those presented in Fig. 3 in the main text (i.e. with $\kappa_0=0.89$ which was used to fit the model). Compared to $\kappa_0=0.89$, optimal allocation in the Windermere pike DEBIPM (main text Fig. 2) results in decreased size specific fecundity (Fig. S5b) and reduced growth  (mean size at age, Fig. S5A) for temperatures above 287 K, and increased growth below or equal to 287 K.  compared to $\kappa_0=0.89$. 
 
 ```{r, echo = FALSE, warning = FALSE, fig.height = 3, fig.width = 6}
 OptPars <- 
@@ -646,7 +645,7 @@ trajBoth <- rbind(trajGOpt,trajG)
 groTopt <- 
   trajBoth %>%
   ggplot(.) +
-  geom_line(size=0.85,  aes(Age, mass, color = as.factor(Temp), linetype = as.factor(Allocation))) + #alpha = strat, 
+  geom_line(size=0.7,  aes(Age, mass, color = as.factor(Temp), linetype = as.factor(Allocation))) + #alpha = strat, 
   scale_color_manual(values = c('#4575b4','#91bfdb','#fee090','#fc8d59','#d73027'), name="Temp [K]")+
   scale_linetype_manual(name="Allocation", values = c("solid", "dashed")) +
   ylab(expression(paste("Mass ", italic("\u03BC")["g"]," [g]"))) +
@@ -654,18 +653,18 @@ groTopt <-
   xlim(0,20)+
   ylim(0,max(trajBoth$mass)) +
   ggtitle('(b)') +
-  theme_light(base_size=9) +
+  theme_light(base_size=8) +
   theme(plot.title = element_text(size = 9, face = "bold"),
         legend.position="none",
         legend.key.width = unit(1, 'cm')) 
 
-# Plot optimal fecundity from DEB and in Lake Windermere
+# Plot optimal fecundity from DEB and in Lake Windermere. Note that we need to double (*2) the fecundity when plotting using repfun(). Repfun account only for female eggs.
 repO=data.frame()
 for(i in 2:ncol(trajO)){ # the temps, from 2nd to 6th column in trajO
   for(j in 1:nrow(trajO)){ # the sizes in trajo, i.e. Age trajO
     if(trajO$Age[j]==1){
-      rep_tplus1 = cbind(trajO[j,i], repfun(e_m, ratefun(e_m, unlist(OptPars[i-1,])), unlist(OptPars[i-1,])), OptPars[i-1,] )} #use the OptPars corresponding to temps in columns in trajO
-    else{ rep_tplus1 = cbind(trajO[j,i], repfun(trajO[j-1,i], ratefun(trajO[j-1,i], unlist(OptPars[i-1,])), unlist(OptPars[i-1,])), OptPars[i-1,] )} #j-1 because last years size predicts fecundity this year
+      rep_tplus1 = cbind(trajO[j,i], repfun(e_m, ratefun(e_m, unlist(OptPars[i-1,])), unlist(OptPars[i-1,]))*2, OptPars[i-1,] )} #use the OptPars corresponding to temps in columns in trajO
+    else{ rep_tplus1 = cbind(trajO[j,i], repfun(trajO[j-1,i], ratefun(trajO[j-1,i], unlist(OptPars[i-1,])), unlist(OptPars[i-1,]))*2, OptPars[i-1,] )} #j-1 because last years size predicts fecundity this year
     colnames(rep_tplus1) <- c("mass","fec","Temp", "Kappa", "Y")
     repO <- rbind(repO, rep_tplus1)
   }
@@ -683,7 +682,7 @@ ggplot() +
   ylab(expression(paste(italic("f"),"(",italic("m"["s"]),italic(",T"),")"))) +
   xlab(expression(paste("Mass ",italic("m")[s]," [g]"))) +
   ggtitle('(b)') +
-  theme_light(base_size=9) +
+  theme_light(base_size=8) +
   theme(plot.title = element_text(size = 9, face = "bold"),
         legend.key.width = unit(1, 'cm')) 
 
@@ -701,7 +700,6 @@ In the main analyses, we contrast the size- and temperature dependent survival u
 ```{r, echo = FALSE, warning = FALSE, fig.height = 8, fig.width = 8}
 mycolors <- colorRampPalette(colors=c("#feebe2","#ce1256"))(9)
 
-Res_lam_2 <- read.delim("//storage-og.slu.se/home$/vitl0001/My Documents/Manus2/Results/Results221011/Res_lam_2_2022-10-07.txt", sep = ",")
 maxl_2 <- as.data.frame(Res_lam_2) %>% 
   group_by(T) %>%
   slice_max(Lambda)
@@ -727,12 +725,11 @@ FigS6a <-
   scale_y_continuous(expand = c(0,0), name=expression(paste(kappa[0]," (Growth allocation)"))) +
   coord_cartesian(xlim = c(283.75, 292)) +
   ggtitle('(a)') +
-  theme_light(base_size=9) +
+  theme_light(base_size=8) +
   theme(panel.grid.major = element_blank(),
         panel.grid.minor = element_blank())
   
-
-Res_w_2 <- read.delim("//storage-og.slu.se/home$/vitl0001/My Documents/Manus2/Results/Results221011/Res_w_2_2022-10-07.txt", sep = ",")
+Res_w_2 <- read.delim(text = getURL("https://raw.githubusercontent.com/VThunell/Allocation-Warming-DEB-IPM/main/data/Res_w_2_2022-10-07.txt"), sep=",")
 colnames(Res_w_2)[4:ncol(Res_w_2)] <- sub("X", "", colnames(Res_w_2)[4:ncol(Res_w_2)])
 
 Res_w_2_long <- pivot_longer(as.data.frame(Res_w_2), cols = c(4:ncol(Res_w_2)),
@@ -754,7 +751,7 @@ FigS6c <-
   scale_x_continuous(expand = c(0,0), name = expression(paste("Mass ",italic("m"["s"])," [g]")), limits = c(0,20000))+
   coord_cartesian(ylim = c(283.75, 292)) +
   ggtitle('(c)') +
-  theme_light(base_size=9) +
+  theme_light(base_size=8) +
   theme(panel.grid.major = element_blank(),
         panel.grid.minor = element_blank())
 
@@ -782,13 +779,13 @@ FigS6b <-
   scale_y_continuous(expand = c(0,0), name=expression(paste(kappa[0]," (Growth allocation)"))) +
   coord_cartesian(xlim = c(283.75, 292)) +
   ggtitle('(b)') +
-  theme_light(base_size=9) +
+  theme_light(base_size=8) +
   theme(panel.grid.major = element_blank(),
         panel.grid.minor = element_blank())
   
 
 # a=0.68, i.e flat survival scenario
-Res_w_3 <- read.delim("//storage-og.slu.se/home$/vitl0001/My Documents/Manus2/Results/Results221011/Res_w_3_2022-10-07.txt", sep = ",")
+Res_w_3 <- read.delim(text = getURL("https://raw.githubusercontent.com/VThunell/Allocation-Warming-DEB-IPM/main/data/Res_w_3_2022-10-07.txt"), sep=",")
 colnames(Res_w_3)[4:ncol(Res_w_3)] <- sub("X", "", colnames(Res_w_3)[4:ncol(Res_w_3)])
 
 Res_w_3_long <- pivot_longer(as.data.frame(Res_w_3), cols = c(4:ncol(Res_w_3)),
@@ -810,7 +807,7 @@ FigS6d <-
   scale_x_continuous(expand = c(0,0), name = expression(paste("Mass ",italic("m"["s"])," [g]")), limits = c(0,20000))+
   coord_cartesian(ylim = c(283.75, 292)) +
   ggtitle('(d)') +
-  theme_light(base_size=9) +
+  theme_light(base_size=8) +
   theme(panel.grid.major = element_blank(),
         panel.grid.minor = element_blank())
 

@@ -317,7 +317,6 @@ stopCluster(cl)
 
 # Get modeled growth and fecundity
 out.optim = project(deb.optim$par, Temp, t, growthTemp_select, fecTemp_select)
-deb.optim$par
 
 #save(deb.optim, file = "optim_Pars.RData")
 #save(deb.optim, file = "optim_Pars_mi.RData")
@@ -325,7 +324,7 @@ deb.optim$par
 ########## VI. Bootstrap confidence intervals ##########
 
 # Choose number of iterations
-n = 10 #1000 used for cf in S2
+n = 1 #1000 used for cf in S2
 
 # Output data frame
 boot.deb = matrix(nrow = n, ncol = 4)
@@ -358,7 +357,6 @@ for(i in 1:n) {
 
 # Predict and plot
 preds = apply(unname(boot.deb), 1, project, Temp = Temp, t = t, gdat = growthTemp_select, fdat = fecTemp_select)
-save(preds, file = "preds.RData")
 
 # Combine predictions
 gboot = do.call(rbind, lapply(preds, function(x) x$g))
@@ -389,3 +387,7 @@ points(fecTemp_select$mass, fecTemp_select$Egg_number*fecTemp_select$Egg_weight/
 polygon(x = c(out.optim$f$mass,rev(out.optim$f$mass)), y = c(fci[,1],rev(fci[,2])), col = rgb(1,0,0,0.2), border = NA)
 
 par(mfrow = c(1,1))
+
+# save predicted data
+#pred <- lst(gci, fci, g=out.optim$g, f=out.optim$f)
+#save(pred, file = "optim_pred.RData")

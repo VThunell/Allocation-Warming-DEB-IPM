@@ -35,7 +35,7 @@ EaC <- 0.73 # activation energy Consumption
 EaM <- 0.62 # activation energy Maintenance
 EdC <- 1.89 # deactivation energy
 Td  <- T0 + 0.75 # temperature at which half the rate is reduced due to temperature
-bTc <- 1.824953 #0.79/rC_T_Pad(292) rate at reference (a common) temperature Sharpe-Schoolf
+bTc <- 1.824953 #0.79/rC_T_Pad(292) rate at reference (a common) temperature Sharpe-Schoolfield
 
 # Parameters for temperature, allocation and feeding level  Y (which is not used in analysis and excluded the main text) for testing demographic function
 test_Pars <- c(T = 287, kappa = deb.optim$par[1], Y = 1) 
@@ -206,7 +206,7 @@ wvlambda.projection <- function(Kmat, N0=rep(10, length(Kmat[1,])), tol=1e-20) {
 # tic()
 # onetest <- wvlambda.projection(K.matrix(test_Pars))
 # toc()
-# sum(onetest$w) # Hold my breath as I wish for death
+# sum(onetest$w) # Hold my breath as I wish for...
 # onetest$lambda # mean fitness for test_Pars
 
 ### SENSITIVITY OF THE DEBIPM ####
